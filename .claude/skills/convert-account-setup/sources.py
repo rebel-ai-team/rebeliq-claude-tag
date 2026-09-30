@@ -141,6 +141,45 @@ def submission_id_from_location_email(email):
     return None
 
 
+def find_submission(email=None, full_name=None, limit=100):
+    """Locate an onboarding submission when the location email doesn't carry it.
+
+    The intake Zap normally stamps the submission id into the GHL location's
+    email address, but that only survives until someone edits the location — at
+    which point the link is gone. Falling back to a search over recent
+    submissions keeps those accounts processable.
+
+    Matches on the submission's own Email answer first, then on the client's
+    name, and returns the most recent match. Both are matched case-insensitively
+    and the newest wins, because clients re-submit the checklist and only the
+    last one reflects what they actually meant.
+    """
+    r = requests.get(
+        f"https://api.jotform.com/form/{ONBOARDING_FORM_ID}/submissions",
+        params={"apiKey": _jotform_key(), "limit": limit,
+                "orderby": "created_at", "direction": "DESC"}, timeout=60)
+    r.raise_for_status()
+    want_email = (email or "").strip().lower()
+    want_name = " ".join((full_name or "").split()).lower()
+    by_name = None
+    for s in r.json().get("content", []):
+        answers = s.get("answers")
+        if isinstance(answers, str):
+            answers = json.loads(answers)
+        flat = {}
+        for field in (answers or {}).values():
+            value = field.get("prettyFormat") or field.get("answer")
+            if field.get("text") and value:
+                flat[field["text"]] = value
+        got_email = str(flat.get("Email", "")).strip().lower()
+        got_name = " ".join(str(flat.get("Name", "")).split()).lower()
+        if want_email and got_email == want_email:
+            return s["id"]
+        if want_name and got_name == want_name and by_name is None:
+            by_name = s["id"]
+    return by_name
+
+
 def jotform_answers(submission_id):
     """Flatten a submission into {question label: value} plus {field name: value}."""
     r = requests.get(f"https://api.jotform.com/submission/{submission_id}",

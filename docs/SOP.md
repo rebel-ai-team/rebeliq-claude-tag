@@ -15,7 +15,7 @@ Everything here now runs over **plain REST against `services.leadconnectorhq.com
 **Credentials in `Google Ads/.env`:** `GHL_APP_CLIENT_ID`, `GHL_APP_CLIENT_SECRET`, `GHL_APP_ACCESS_TOKEN` (company-level), `GHL_APP_REFRESH_TOKEN`.
 
 **Getting a usable token, every run:**
-1. Company access token expires in ~24h (`expires_in: 86399`). Refresh via `POST /oauth/token` with `grant_type=refresh_token`, `client_id`, `client_secret`, `refresh_token`, `user_type=Company`. **The refresh token does not need to be persisted or rotated** — verified 2026-09-28: GHL returns a *new* refresh token on every refresh, but the old one keeps working indefinitely (reused a spent token → 200; the newer token stayed valid too — no reuse detection, no chain revocation). So store **one** refresh token as a static read-only secret, mint a fresh access token from it each run, and discard the new refresh token it hands back. No write-back storage needed, and concurrent runs are safe.
+1. Company access token expires in ~24h (`expires_in: 86399`). Refresh via `POST /oauth/token` with `grant_type=refresh_token`, `client_id`, `client_secret`, `refresh_token`, `user_type=Company`. **The refresh token rotates and MUST be persisted** — corrected 2026-09-30. An earlier test suggested spent refresh tokens stayed valid; in practice the stored token went dead within two days and returned `{"error":"invalid_grant","error_description":"This refresh token is invalid"}`, forcing a human back through the OAuth consent screen. `ghl_client.company_token()` now writes the returned `refresh_token` back to the file named by `GHL_TOKEN_FILE`, else `GHL_ENV_FILE`, before returning. Consequences: **runs must not overlap** (two concurrent runs each rotate the token and one invalidates the other), and any host that injects secrets as read-only environment variables — Claude Tag included — needs a writable `GHL_TOKEN_FILE` or it will break after one cycle.
    - Caveat: that's observed behavior, not documented. If GHL ever tightens this, a refresh will start returning 401 — so the run should treat a failed refresh as "needs a human to redo the OAuth handshake" and say so loudly rather than failing silently. Recovery is ~2 minutes: rebuild the authorization URL, approve as agency owner, exchange the code.
    - There's no need to store the access token at all — it's derived fresh each run.
 2. Exchange for a location token per account: `POST /oauth/locationToken`, form-encoded `companyId` + `locationId`, `Authorization: Bearer {company_token}`. **Returns 201, not 200** — don't treat non-200 as failure. Response `access_token` is a Location-type token scoped to that one location.
@@ -35,6 +35,40 @@ The steps below were originally written against MCP operation names. REST equiva
 | media upload | `POST /medias/upload-file` |
 
 Note `idempotencyKey` was an MCP-layer requirement, not a GHL one — there's no such field on the REST calls.
+
+
+### Locating the Jotform submission
+
+The intake Zap stamps the submission id into the GHL location's email as
+`{submission_id}@leadpops.com`, and that is the primary lookup. It is not
+durable: once someone swaps in the client's real address the link is gone
+(seen on John Nagle, 2026-09-30). `sources.find_submission()` then searches the
+form's recent submissions by the Service's `contact_email`, falling back to the
+client's name, newest match first — clients re-submit the checklist and only the
+last submission reflects what they meant. A fallback match is reported as an
+issue: it is a guess at identity, so it wants a human's eye.
+
+### The location link can be wrong
+
+`convert_location_link` on the Service record is the only pointer to the GHL
+account, and it can point at a location that no longer exists — Nathan Myres's
+Service pointed at `7S0TqS9DKcKEp2oG9sBI` (deleted; `GET /locations/{id}` → 403
+with a company token) while his real account was `JzfyEYA0P3l0Rn28agUD`. A 403
+on a location read is ambiguous: it means either the app is not installed on
+that sub-account or the location is gone. Distinguish them by paging the full
+`GET /oauth/installedLocations` list (it pages 100 at a time — check `count`,
+not the first response) and by searching `GET /locations/search` for the client
+name. Fix the HubSpot property before rerunning, so the record stays the
+source of truth.
+
+### Client uploads that are not images
+
+Clients upload brand packages and vector sources into the logo field — Nathan
+Myres submitted `LogoPackage-C2.zip` holding black and white PNGs plus SVG, PDF
+and AI files. Only `png/jpg/jpeg/gif/webp` are uploaded; anything else is
+reported and skipped. Do not unpack a package and pick a file: choosing between
+a light-background and a dark-background lockup is a brand decision, and a
+wrong pick lands in a live custom value that feeds the client's site and email.
 
 ## Source data priority
 

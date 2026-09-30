@@ -15,6 +15,7 @@ import ghl_client
 import sources
 
 CALENDAR_NAME = "Mortgage Consultation"
+IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 STANDARD_PASSWORD = "RebelConvert123!"
 COMPLETION_MARKER = "Claude account setup completed"
 
@@ -145,8 +146,22 @@ def process(service, company_tok, dry_run):
         issues.append(f"could not read location record: {e}")
     submission_id = sources.submission_id_from_location_email(location_email)
     if not submission_id:
-        print("  SKIP: could not derive Jotform submission id from location email")
-        return None
+        # The location email no longer carries the submission id — usually
+        # because someone already swapped it for the client's real address.
+        full_name = " ".join(
+            p for p in [(contact or {}).get("firstname"),
+                        (contact or {}).get("lastname")] if p).strip()
+        submission_id = sources.find_submission(
+            email=props.get("contact_email") or location_email,
+            full_name=full_name)
+        if not submission_id:
+            print("  SKIP: no Jotform submission found by location email, "
+                  "contact email, or name")
+            return None
+        issues.append(
+            f"location email held no submission id ({location_email!r}); "
+            f"matched Jotform submission {submission_id} by client identity "
+            "instead \u2014 confirm it is the right one")
     jot = sources.jotform_answers(submission_id)
     print(f"  jotform submission {submission_id} ({len(jot)} answers)")
 
@@ -161,6 +176,17 @@ def process(service, company_tok, dry_run):
             issues.append(f"no {label} uploaded in the Jotform submission")
             continue
         ext = upload_url.rsplit(".", 1)[-1].split("?")[0].lower() or "jpg"
+        if ext not in IMAGE_EXTENSIONS:
+            # Clients sometimes upload a brand package or a vector source file
+            # instead of the image itself. Uploading it under an image content
+            # type would put a broken URL in a live custom value, and choosing
+            # a variant out of a logo package is a brand decision, not a
+            # scripted one.
+            issues.append(
+                f"{label} is a .{ext}, not a usable image "
+                f"({upload_url.rsplit('/', 1)[-1]}) \u2014 needs a human to "
+                "supply the right file")
+            continue
         fname = f"{(name or 'client').split(' - ')[-1].strip().lower().replace(' ', '-')}-{suffix}.{ext}"
         if dry_run:
             print(f"  [dry-run] would upload {label} as {fname}")

@@ -1,8 +1,10 @@
 """GoHighLevel client for the Convert account-setup agent.
 
 Auth: OAuth marketplace app ("rebel iQ Claude"), agency-installed with
-auto-install on future sub-accounts. A company token is minted from a static
-refresh token each run, then exchanged for a per-location token.
+auto-install on future sub-accounts. A company token is minted from the stored
+refresh token each run, then exchanged for a per-location token. GHL rotates
+the refresh token on every mint and kills the old one, so the new one is
+written back before anything else happens.
 
 Private Integration Tokens are deliberately not used: agency PITs cannot touch
 location-scoped resources at all, and location PITs only work for the one
@@ -10,6 +12,7 @@ location they were minted in.
 """
 
 import os
+import re
 
 import requests
 
@@ -58,12 +61,39 @@ def _auth(token, json_body=False):
     return h
 
 
-def company_token():
-    """Mint a company-level access token from the static refresh token.
+def _persist_refresh_token(token):
+    """Store the rotated refresh token so the next run can authenticate.
 
-    GHL returns a new refresh token every time but keeps old ones valid
-    (verified), so the stored one is reusable indefinitely and nothing needs
-    persisting. If that ever changes this raises AuthExpired.
+    GHL rotates the refresh token on every mint and invalidates the previous
+    one, so a run that drops the new token leaves the credential dead and
+    forces a human back through the OAuth consent screen. Written to the file
+    named by GHL_TOKEN_FILE when set, otherwise to the .env the process was
+    loaded from (GHL_ENV_FILE). Where neither is set — a container with secrets
+    injected as environment variables, e.g. Claude Tag — there is nothing to
+    write to; the caller is responsible for the handoff.
+    """
+    os.environ["GHL_APP_REFRESH_TOKEN"] = token
+    path = os.environ.get("GHL_TOKEN_FILE") or os.environ.get("GHL_ENV_FILE")
+    if not path or not os.path.exists(path):
+        return
+    try:
+        text = open(path, encoding="utf-8").read()
+        line = f"GHL_APP_REFRESH_TOKEN={token}"
+        if re.search(r"(?m)^GHL_APP_REFRESH_TOKEN=.*$", text):
+            text = re.sub(r"(?m)^GHL_APP_REFRESH_TOKEN=.*$", line, text)
+        else:
+            text = text.rstrip("\n") + f"\n{line}\n"
+        open(path, "w", encoding="utf-8", newline="\n").write(text)
+    except OSError as e:
+        # Not fatal for this run — the token already in hand still works.
+        print(f"WARNING: could not persist rotated refresh token to {path}: {e}")
+
+
+def company_token():
+    """Mint a company-level access token, rotating the stored refresh token.
+
+    The refresh token GHL hands back replaces the one used: the old one stops
+    working, so it has to be persisted before the next run.
     """
     try:
         creds = {
@@ -86,7 +116,10 @@ def company_token():
             "Redo the OAuth handshake: rebuild the authorization URL, approve "
             "as agency owner, exchange the code for a new refresh token."
         )
-    return r.json()["access_token"]
+    payload = r.json()
+    if payload.get("refresh_token"):
+        _persist_refresh_token(payload["refresh_token"])
+    return payload["access_token"]
 
 
 class Location:
