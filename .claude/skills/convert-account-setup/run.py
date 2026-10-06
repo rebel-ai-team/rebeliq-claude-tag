@@ -67,10 +67,28 @@ def pick(props, hs_key, jot, jot_label, issues, looks_wrong=None):
     if hs_value:
         return hs_value
     if jot_value:
+        if looks_wrong and looks_wrong(jot_value):
+            issues.append(
+                f"HS `{hs_key}` was blank and Jotform {jot_label!r} is not a "
+                f"usable value ({jot_value!r}) \u2014 left unset")
+            return ""
         issues.append(f"HS `{hs_key}` was blank; used Jotform {jot_label!r}")
         return jot_value
     issues.append(f"no value found for `{hs_key}` in HubSpot or Jotform")
     return ""
+
+
+def _not_a_link(value):
+    """True when a link field holds prose instead of a URL.
+
+    Clients answer "1003 URL" with things like "do not have one yet will
+    provide next week". Written into a custom value that prose ends up as a
+    live link on the client's site and in their emails.
+    """
+    v = value.strip()
+    if " " in v:
+        return True
+    return not (v.startswith(("http://", "https://")) or "." in v)
 
 
 def _concatenated_numbers(value):
@@ -111,12 +129,12 @@ def build_custom_values(props, jot, contact, location_id, calendar_id, logo_url,
         "Account - Friendly Business Name": friendly,
         "Account - Location ID": location_id,
         "Account - Website Link": pick(props, "website_url", jot, "Website URL",
-                                       issues),
+                                       issues, looks_wrong=_not_a_link),
         "From Email": email,
         "From Name": full_name,
         "Known As Business Name": friendly,
         "Link - 1003 Application": pick(props, "n1003_url", jot, "1003 URL",
-                                        issues),
+                                        issues, looks_wrong=_not_a_link),
     }
     if logo_url:
         values["Business Logo"] = logo_url
