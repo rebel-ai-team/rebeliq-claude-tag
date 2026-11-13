@@ -1,6 +1,6 @@
 # Convert Agent SOP — Automated Steps
 
-Companion to `Scribe Convert setup SOP.md`. This doc tracks the exact, validated, repeatable procedure for the parts of GHL sub-account setup an AI agent handles. Steps not listed here stay manual — see the checklist split in project memory (`project_digital_pipeline.md`).
+Companion to `Scribe Convert setup SOP.md`. This doc tracks the exact, validated, repeatable procedure for the parts of GHL sub-account setup an AI agent handles, then the manual browser process that follows an API run. Steps still not listed here stay manual — see the checklist split in project memory (`project_digital_pipeline.md`).
 
 Validated end-to-end on Mark Whitaker's account (GHL location `2zUqUFeqY24eLYKaExQx`, HubSpot Service `586065166437`) and Joseph Bui's (`2GIFRtcWcBUoqp7Cf7zY`, Service `586457786902`).
 
@@ -194,3 +194,93 @@ Once Steps 1–4 are done (or as far as they can go), leave a note on the HubSpo
 - Content: a short summary of what was completed (user, images, calendar, custom values — mention counts), **any issues actually encountered on this specific account** (data gaps, blocked fields, anything that needed a fallback or looked off), and what's still left for a human. Keep it factual and specific to that run, not a copy-paste template — the point is an honest per-account record, not a checkbox.
 
 Validated on Mark Whitaker's Service record (`586065166437`, note id `116698898488`) on 2026-09-10.
+
+## Manual browser process (after the API run)
+
+Recorded step by step with Denis on Mindy Bakker's account on 2026-11-13 and approved as the manual process for new accounts. Run these after the API run (Steps 1-3) has finished.
+
+A VA was also finishing Mindy's account by hand at the same time, so some of the "state seen" notes reflect their work, not a fresh account. **The steps are the process; the observed states are reference only.** More steps get added on the next account.
+
+Run in the box browser, signed in at https://app.rebelconvert.com (agency: rebel iQ).
+
+**B7 (Custom Values edits) is still to be completed on the next account.** B1–B6 below are the approved process. B7 records how to open Custom Values and what was already on Mindy's account; it is not a finished fill procedure.
+
+### B1. Open sub-account settings > Features and Limits
+
+1. Agency Dashboard > left menu **Sub-Accounts**, wait for load.
+2. Search the client's name; sub-accounts are named `{friendly business name} - {First Last}` (e.g. `gomortgagepros - Mindy Bakker`).
+3. Click the name to open settings. Direct URL: `https://app.rebelconvert.com/accounts/detail/{locationId}`.
+4. Top tabs: Basic Details, SaaS, Features and Limits, Rebilling, Reselling, Marketplace, Advanced Settings, Calendar Settings. Click **Features and Limits**.
+5. Baseline state on a fresh account (Mindy): User Limit and Contact Limit off (Unlimited); all 67 features on.
+6. Set exactly this, leave everything else as is:
+   - **AI Agents**: ALL OFF (Agent Studio, AI Studio, Ask AI, Content AI, Conversation AI, Funnels AI, Reviews AI, Voice AI)
+   - **Marketing**: Affiliate Manager OFF, Loyalty OFF (rest stays on)
+   - **Memberships**: ALL OFF
+   - **Payments**: ALL OFF
+   - **Sites**: ALL OFF
+   - Unchanged: limits, Automation, Calendar, CRM, Labs, Landing, Media Storage, Mobile App, Private Integrations, Reporting, Reputation Management.
+7. Click Save. No toast appears; the Save button greying out means it saved. Reload and verify: 35 of 67 features on (verified on Mindy).
+
+### B2. Complete sub-account Business Info
+
+1. Enter the sub-account: on the settings page, top-right **Switch to Sub-Account** (or the account switcher at the top of the left menu, search the name, click it).
+2. Settings > **Business Profile**. Direct URL: `https://app.rebelconvert.com/v2/location/{locationId}/settings/company`.
+3. Sections: General Information, Business Information, Business Physical Address, Authorized Representative, General, Contact Deduplication Preferences.
+4. Pre-filled by the intake Zap on a fresh account (Mindy): Friendly Business Name (`{friendly} - {First Last}`), Business Phone, Business Website, Street/City/Zip/State/Country, Time Zone (from Jotform), language. Blank: logo, legal name, business email, niche, currency, business type/industry/registration, regions, address line 2, authorized rep.
+5. Fill (approved by Denis on Mindy):
+   - Business Logo: the re-hosted logo from API Step 2 (already in the account's media library)
+   - Legal Business Name: Jotform Legal Business Name (HS `legal_business_name`)
+   - Business Email: Jotform Email
+   - Business Niche: Mortgage; Business Currency: USD
+   - Business Type: Jotform Business Entity Type (HS `business_entity_type`)
+   - Business Industry: **always Financial Services** (not the Jotform "Mortgage" answer)
+   - Registration ID Type: EIN; Number: Jotform EIN Number (HS `ein_number` carries junk text appended, use Jotform)
+   - Regions of Operations: Jotform Business Region of Operations
+   - Street Address: Jotform street + line 2 combined (page has no line 2 field; the Zap drops line 2)
+   - Authorized Representative: client first/last name, Jotform Email, Jotform Title as Job Position, Jotform phone with +1
+   - Leave Friendly Business Name, phone, website, city/zip/state/country, time zone as the Zap set them; Branded Domain waits for the domain step.
+6. Save each section, reload, verify.
+
+B2 quirks seen on Mindy:
+
+- General Information save fails with `INVALID_COUNTRY` when the Zap-set business phone has no +1 country code; re-enter it as +1 before saving (outright error, so OK to fix).
+- Logo upload only offers a local file chooser (no Media Storage/URL), so download the re-hosted logo to the box first and upload the file.
+- Industry dropdown label is "Financial"; Rep Job Position options are Director, GM, VP, CEO, CFO, General Counsel, Other (use Other for titles like Mortgage Broker).
+- No toast on save; verify by reloading.
+
+### B3. Connect the website domain
+
+1. Inside the sub-account (from Settings use "Go Back" to reach `/dashboard`), left menu **Sites** (still visible even with Sites features OFF in Features and Limits) → top menu **Websites** (`/v2/location/{locationId}/funnels-websites/websites`).
+2. Open **Home Consultation A2P** (`.../websites/{websiteId}/pages`) → top menu **Settings** (`.../websites/{websiteId}/settings`).
+3. Domain dropdown: pick the one available domain (on Mindy it was `misce.rebelconvert.com`; the only other option is the "Please select a domain" placeholder). If more than one real domain shows, stop and ask. Page path stays `/home-consultation`.
+4. Save (no toast), reload, and check the domain stayed set.
+
+### B4. Connect the Miscellaneous pages domain and collect page URLs
+
+1. Sites → Websites → **Miscellaneous pages** → Settings. Pick the same available domain (`misce.rebelconvert.com` on Mindy), Save, reload, and check it stayed set.
+2. Expect the alert "Some paths are updated due to url conflicts with other funnels!": GHL adds a suffix to the site path (e.g. `/miscellaneous-pages-307053`). That's normal.
+3. Pages tab: copy each page's public URL (domain + path). On Mindy there were 5 pages: Book A Consultation, No Show Page, Showed and not qualified, Showed and qualified, Referral Page. Their paths have random numeric suffixes, so always read them from the page instead of guessing.
+
+### B5. Assign the user in the "New Lead Created" workflow
+
+1. Left menu **Automation** → folder **Internal operations** → workflow **01. iQ - New Lead Created**.
+2. Click the first ACTION step (below the triggers): **Assign to user - [USER NAME]**. It shows an orange warning, and USERS holds a stale ID chip from the template.
+3. Remove the chip and pick the client user from the dropdown (the only option on a fresh account). Leave the action name and "Only apply to unassigned contacts" as they are.
+4. Click **Save action** (bottom right), then **Save** (top right). The toast "Saved! Workflow has been saved." confirms it. Don't touch Draft/Publish; the workflow is already Published.
+5. Reload and reopen the step to check that the user is still selected and the warning is gone.
+
+### B6. Make sure every workflow is ON (Publish all)
+
+1. Automation → Workflows list (top level, not inside a folder). Click the **recent** clock icon (middle of the three icons left of Search) for a flat list without folders. Mindy had 52 workflows across 2 pages at 50 per page.
+2. Click the header select-all checkbox. It selects only the current page, and the "Select all" link doesn't extend the selection to other pages. Bulk action **Publish** → confirm "Are you sure you want to publish selected workflows?".
+3. Go to page 2 and repeat.
+4. Results can say "Updated 35 of 50 workflows. 15 were skipped." The skipped ones were already Published.
+5. Check that every row on both pages shows Published.
+
+### B7. Custom Values
+
+**Still to be completed on the next account.** Which values to fill, and from where, is still to be recorded. Do not treat the state below as the fill procedure.
+
+1. Bottom-left **Settings** → **Custom Values** (`/v2/location/{locationId}/settings/custom_values`). Set rows per page to 100 at the bottom right (`?size=100&page=1`) so all values show; Mindy had 32.
+2. State seen on Mindy (the VA had probably already filled these by hand): the Link - Page / Calendar values already matched the Miscellaneous pages URLs from B4. Still empty: Account - Main Smart Number, CRM Phone Number, Campaign - 2/1 BuyDown Consumer Story, Campaign - Open House Address / Listing Agent Company Name / Listing Agent Name, Link - Reviews - Google, Link - [user1] Zoom Meeting Room.
+3. Which values to fill, and from where, is still to be recorded on the next account. Likely: put the B4 page URLs into the Link - Page / Link - Calendar values.
