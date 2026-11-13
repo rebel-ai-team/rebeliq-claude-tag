@@ -11,6 +11,8 @@ import datetime
 import re
 import sys
 
+import requests
+
 import ghl_client
 import sources
 
@@ -215,8 +217,24 @@ def process(service, company_tok, dry_run):
         except Exception as e:  # noqa: BLE001 - one bad image shouldn't halt setup
             issues.append(f"{label} upload failed: {e}")
             continue
-        if location_id not in url:
-            issues.append(f"{label} uploaded but URL is not in this location: {url}")
+        # The upload uses this account's location token, so the file lands in
+        # its own media library. GHL used to return
+        # assets.cdn.filesafe.space/{locationId}/media/... URLs; since Nov 2026
+        # it returns files.leadconnectorhq.com/file/{id}/{name}, which carries
+        # no location id. Accept either, and verify the URL actually serves an
+        # image instead (SOP Step 2.4).
+        known_host = (location_id in url
+                      or url.startswith("https://files.leadconnectorhq.com/"))
+        if not known_host:
+            issues.append(f"{label} uploaded to an unexpected host: {url}")
+        try:
+            chk = requests.get(url, allow_redirects=False, timeout=30)
+            ok = (chk.status_code == 200 and chk.headers.get(
+                "content-type", "").startswith("image/"))
+        except requests.RequestException:
+            ok = False
+        if not ok:
+            issues.append(f"{label} uploaded but its URL does not serve an image: {url}")
         if label == "logo":
             logo_url = url
         else:
