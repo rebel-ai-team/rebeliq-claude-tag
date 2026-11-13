@@ -88,7 +88,9 @@ Not automatable — no API exists for these, or they need a human decision:
 Business Profile / A2P compliance info, Domains (GoDaddy OAuth), Sites/website
 build, Workflows setup, Phone # purchase, Closebot AI bot connection. Agency-level
 feature toggles too. Always name these in your report so whoever picks the account
-up next knows exactly where it stands.
+up next knows exactly where it stands. The recorded browser steps are in
+`docs/SOP.md` under **Manual browser process (after the API run)** (B1–B7).
+B7 (Custom Values edits) is still to be completed on the next account.
 
 ## Reference
 
