@@ -342,7 +342,7 @@ Run after the A2P preparation SOP. Sites and Domains & URLs stay ON.
 
 ## Write the HubSpot completion note
 
-Write the HubSpot completion note (run the final-note command) once everything, including B1, is done. Not during the API run. This note is the done-signal ("Claude account setup completed"). It does not advance the pipeline stage.
+Write the HubSpot completion note (run the final-note command) once everything, including B1, is done. Not during the API run. The heading is **Convert account setup COMPLETE (final)**. Only that heading is a duplicate. An older API-run note ("Claude account setup completed (automated steps)") does not block it. The note does not advance the pipeline stage.
 
 From `.claude/skills/convert-account-setup`:
 
@@ -351,7 +351,15 @@ python run.py --final-note --service-id <id> --dry-run   # prints the note, writ
 python run.py --final-note --service-id <id>             # writes the note
 ```
 
-The note summarizes that account: the GHL user, the Mortgage Consultation calendar, the custom values that are set (and the ones left empty), and that the manual browser steps are completed — A1–A5, B2–B7, P1–P2, and B1. `--dry-run` shows that text and does not post it. A second run does not write another note if one is already on the Service record.
+The note summarizes that account: the GHL user (and flags the email when it is still an `@leadpops.com` placeholder), the Mortgage Consultation calendar, the custom values that are set, and this end state:
+
+- Misc site is on `misce.rebelconvert.com`
+- Home Consultation A2P site is on `<name>.clixwithus.com` (P1, page paths cleaned). `<name>` is taken from the Domain custom value when it is already `https://<name>.clixwithus.com`
+- P2 custom values (DBA cleared, Known As, Domain = `https://<name>.clixwithus.com`)
+- Logo and headshot uploaded to the client's media library, headshot as profile photo and logo as Business Logo
+- B1 Features and Limits at 47/67 with the whole Sites group ON (AI Agents, Memberships and Payments off; Affiliate Manager and Loyalty off)
+
+`--dry-run` shows that text and does not post it. A second run does not write another note when one already contains **Convert account setup COMPLETE (final)**.
 
 Mechanics, unchanged: association type between Notes and the Service object is `associationTypeId: 837` (`associationCategory: "HUBSPOT_DEFINED"`), name `note_to_service` — found via `GET /crm/v3/associations/notes/0-162/types`. Not the same type ID used for note→contact (that's `202`, see `hubspot_client.py`). Create via `POST /crm/v3/objects/notes` with `hs_note_body` (HTML ok), `hs_timestamp`, and `associations: [{ "to": { "id": <serviceRecordId> }, "types": [{ "associationCategory": "HUBSPOT_DEFINED", "associationTypeId": 837 }] }]`. There is no pipeline-stage update in that call.
 

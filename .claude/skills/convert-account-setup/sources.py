@@ -62,10 +62,11 @@ def services_in_stage(stage_id=STAGE_CAMPAIGN_ACCOUNT_SETUP, limit=50):
 def service_notes(service_id):
     """Note bodies already attached to a Service record.
 
-    Used to decide whether an account is finished. The completion note is the
-    done-signal. It is written only by `run.py --final-note`, after the Account
-    Setup SOP and the A2P preparation SOP, including B1. The pipeline stage is
-    never advanced.
+    Used to decide whether an account is finished. The final note's heading is
+    "Convert account setup COMPLETE (final)", written only by
+    `run.py --final-note`. Older API-run notes say "Claude account setup
+    completed (automated steps)" and are not that heading. The pipeline stage
+    is never advanced.
     """
     r = requests.get(
         f"{HS_BASE}/crm/v3/objects/{SERVICE_OBJECT}/{service_id}/associations/notes",

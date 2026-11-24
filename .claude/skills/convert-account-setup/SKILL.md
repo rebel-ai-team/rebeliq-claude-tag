@@ -47,11 +47,13 @@ Hosts that must be reachable: `services.leadconnectorhq.com`, `api.hubapi.com`,
 ## How accounts get picked up
 
 Service records in the HubSpot Digital Pipeline, stage **Campaign/Account
-Setup**, named `New Convert Account - *`, that don't already have a note
-containing "Claude account setup completed". That note is the done-signal,
-and it is written only by `--final-note` after both SOPs, including B1. Until
-then the account stays eligible for the API run. Do not run that API setup
-again after B7 or P2: Step 4 would write its values back over the later ones.
+Setup**, named `New Convert Account - *`, that don't already have a note from
+the API run ("Claude account setup completed") or the final note
+("Convert account setup COMPLETE (final)"). The final heading is the
+done-signal. It is written only by `--final-note`, and only that heading
+counts as a duplicate — an older "(automated steps)" note does not block it.
+Do not run the API setup again after B7 or P2: Step 4 would write its values
+back over the later ones.
 
 **Do not advance the pipeline stage.** Not from the API run, and not from
 `--final-note`. Phone # purchase and Closebot still sit in this same stage.
@@ -86,8 +88,13 @@ summary, so don't bury them. Judgment calls that are yours, not the script's:
 After a real API run, report per account: what got done, what issues came up,
 and what's still waiting on a human. The script does not write a HubSpot note
 for that run. After A1–A5, B2–B7, P1–P2, and B1, run `--final-note` (dry-run
-first). That note summarizes the user, calendar, custom values set, and those
-manual steps. Your Slack summary of the API run should lead with anything that
+first). That note is headed "Convert account setup COMPLETE (final)" and summarizes
+the user (flagging an email that is still `@leadpops.com`), calendar, custom
+values set, and the end state: Misc on `misce.rebelconvert.com`, Home
+Consultation A2P on `<name>.clixwithus.com` with P1 paths cleaned, P2 (DBA
+cleared, Known As, Domain = `https://<name>.clixwithus.com`), logo and
+headshot in the client's media library, and B1 at 47/67 with the whole Sites
+group ON. Your Slack summary of the API run should lead with anything that
 needs attention. The note does not advance the pipeline stage.
 
 ## If auth fails

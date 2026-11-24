@@ -26,24 +26,11 @@ import sources
 CALENDAR_NAME = "Mortgage Consultation"
 IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 STANDARD_PASSWORD = "RebelConvert123!"
+# Older API-run notes use this, including the "(automated steps)" ones. It is
+# not the final note. The batch still treats it as "the API run already happened".
 COMPLETION_MARKER = "Claude account setup completed"
-
-# Attested by running --final-note, which is only done after these are finished.
-# The command does not re-check the browser; it records that they are done.
-MANUAL_STEPS_COMPLETED = [
-    "A1\u2013A5 agency-level setup (Phone linked to LeadConnector; "
-    "Workflow Premium Features off; External AI Models off; Domain Purchase off; "
-    "AI Agents off)",
-    "B2 Business Profile",
-    "B3 Home Consultation A2P on misce.rebelconvert.com",
-    "B4 Miscellaneous pages on misce.rebelconvert.com, page URLs collected",
-    "B5 user assigned in 01. iQ - New Lead Created",
-    "B6 all workflows published",
-    "B7 custom values",
-    "P1 A2P page paths cleaned",
-    "P2 A2P custom values",
-    "B1 Features and Limits (Sites and Domains & URLs left ON)",
-]
+# Only this heading means a final note is already on the Service record.
+FINAL_NOTE_HEADING = "Convert account setup COMPLETE (final)"
 
 # Mirrors the permissions on an existing correctly-configured account.
 STANDARD_PERMISSIONS = {
@@ -323,10 +310,60 @@ def load_service(service_id):
     return r.json()
 
 
+def _cv_named(custom_values, *names):
+    wanted = {n.strip().lower() for n in names}
+    for cv in custom_values:
+        if (cv.get("name") or "").strip().lower() in wanted:
+            return cv
+    return None
+
+
+def _a2p_domain(custom_values):
+    """Return (https URL, '<name>.clixwithus.com') when Domain is that host."""
+    cv = _cv_named(custom_values, "Domain")
+    value = str((cv or {}).get("value") or "").strip().rstrip("/")
+    match = re.fullmatch(r"https://([A-Za-z0-9-]+)\.clixwithus\.com", value)
+    if match:
+        return value, f"{match.group(1)}.clixwithus.com"
+    return value, None
+
+
+def _completed_steps(custom_values):
+    """The attested end state. `<name>` comes from the Domain custom value."""
+    domain_url, host = _a2p_domain(custom_values)
+    if host:
+        a2p_host = host
+        domain_shown = domain_url
+    else:
+        a2p_host = "<name>.clixwithus.com"
+        domain_shown = "https://<name>.clixwithus.com"
+    steps = [
+        "Misc site is on misce.rebelconvert.com",
+        f"Home Consultation A2P site is on {a2p_host} (P1, page paths cleaned)",
+        "P2 custom values (DBA cleared, Known As, Domain = "
+        f"{domain_shown})",
+        "Logo and headshot uploaded to the client's media library, "
+        "headshot as profile photo and logo as Business Logo",
+        "B1 Features and Limits at 47/67 with the whole Sites group ON "
+        "(AI Agents, Memberships and Payments off; Affiliate Manager and "
+        "Loyalty off)",
+    ]
+    flags = []
+    if not host:
+        current = domain_url or "(empty)"
+        flags.append(
+            "FLAG: Domain is not https://<name>.clixwithus.com "
+            f"(current: {current})")
+    return steps, flags
+
+
 def _note_lines(service, loc):
     """Readable lines for the completion note. `loc` is the GHL location client."""
     props = service["properties"]
+    custom_values = loc.custom_values()
     lines = [
+        FINAL_NOTE_HEADING,
+        "",
         "Written after the Account Setup SOP and the A2P preparation SOP, "
         "including B1. The pipeline stage was not changed.",
         "",
@@ -343,6 +380,10 @@ def _note_lines(service, loc):
         lines.append(
             f"- {user.get('name') or '(no name)'} ({user.get('id')})"
             + (f" {email}" if email else ""))
+        if email.lower().endswith("@leadpops.com"):
+            lines.append(
+                "  FLAG: user email is still the @leadpops.com placeholder "
+                f"({email})")
     cal = loc.calendar_by_name(CALENDAR_NAME)
     members = ", ".join(
         m.get("userId", "") for m in (cal.get("teamMembers") or [])) or "none"
@@ -355,7 +396,7 @@ def _note_lines(service, loc):
         "Custom values set:",
     ]
     filled, empty = [], []
-    for cv in sorted(loc.custom_values(), key=lambda c: (c.get("name") or "").lower()):
+    for cv in sorted(custom_values, key=lambda c: (c.get("name") or "").lower()):
         name = cv.get("name") or cv.get("fieldKey") or cv.get("id")
         value = cv.get("value")
         if value is None or str(value).strip() == "":
@@ -367,17 +408,34 @@ def _note_lines(service, loc):
     lines.extend(f"- {name}" for name in empty)
     if not empty:
         lines.append("- none")
-    lines += ["", "Manual browser steps completed:"]
-    lines.extend(f"- {step}" for step in MANUAL_STEPS_COMPLETED)
+    steps, flags = _completed_steps(custom_values)
+    lines += ["", "Completed:"]
+    lines.extend(f"- {step}" for step in steps)
+    lines.extend(flags)
     return lines
 
 
 def note_html_from_lines(lines):
     body = []
-    for line in lines:
-        body.append("<br>" if line == "" else html.escape(line) + "<br>")
-    return (f"<strong>{html.escape(COMPLETION_MARKER)}</strong><br><br>"
-            + "".join(body))
+    for index, line in enumerate(lines):
+        if line == "":
+            body.append("<br>")
+        elif index == 0:
+            body.append(f"<strong>{html.escape(line)}</strong><br>")
+        else:
+            body.append(html.escape(line) + "<br>")
+    return "".join(body)
+
+
+def note_is_final(body):
+    """True only for the final heading, not an older API-run note."""
+    return FINAL_NOTE_HEADING in (body or "")
+
+
+def note_blocks_api_run(body):
+    """An old API-run note or a final note means the API run already happened."""
+    text = body or ""
+    return COMPLETION_MARKER in text or FINAL_NOTE_HEADING in text
 
 
 def write_final_note(service, company_tok, dry_run):
@@ -389,8 +447,7 @@ def write_final_note(service, company_tok, dry_run):
     service_id = service["id"]
     name = service["properties"].get("hs_name") or service_id
     print(f"\n=== final note for {name} (service {service_id})")
-    already = any(COMPLETION_MARKER in (n or "")
-                  for n in sources.service_notes(service_id))
+    already = any(note_is_final(n) for n in sources.service_notes(service_id))
     location_id = sources.location_id_from_service(service["properties"])
     if not location_id:
         print("  SKIP: no GHL location id in convert_location_link")
@@ -402,11 +459,11 @@ def write_final_note(service, company_tok, dry_run):
     if dry_run:
         print("\n  [dry-run] note not written")
         if already:
-            print("  a completion note is already on this Service record; "
+            print("  a final note is already on this Service record; "
                   "a real run would not write another")
         return 0
     if already:
-        print("  completion note already on this Service record; not writing another")
+        print("  final note already on this Service record; not writing another")
         return 0
     ts = datetime.datetime.now(datetime.timezone.utc).strftime(
         "%Y-%m-%dT%H:%M:%SZ")
@@ -446,8 +503,7 @@ def main():
         for s in sources.services_in_stage():
             if not s["properties"].get("hs_name", "").startswith("New Convert Account"):
                 continue
-            if any(COMPLETION_MARKER in (n or "")
-                   for n in sources.service_notes(s["id"])):
+            if any(note_blocks_api_run(n) for n in sources.service_notes(s["id"])):
                 continue
             candidates.append(s)
 

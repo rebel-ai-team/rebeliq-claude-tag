@@ -132,4 +132,4 @@ python run.py --final-note --service-id <id> --dry-run   # prints the note, writ
 python run.py --final-note --service-id <id>             # writes the note
 ```
 
-The note summarizes that account: user, calendar, custom values set, and the manual browser steps A1-A5, B2-B7, P1-P2, B1 completed. `--dry-run` shows the note text without writing it.
+The note is headed "Convert account setup COMPLETE (final)". Only that heading is a duplicate; an older "Claude account setup completed (automated steps)" note does not block it. It summarizes the user (and flags an email that is still `@leadpops.com`), calendar, custom values set, and the end state: Misc site on misce.rebelconvert.com; Home Consultation A2P site on `<name>.clixwithus.com` (P1, page paths cleaned); P2 custom values (DBA cleared, Known As, Domain = `https://<name>.clixwithus.com`); logo and headshot uploaded to the client's media library, headshot as profile photo and logo as Business Logo; B1 Features and Limits at 47/67 with the whole Sites group ON (AI Agents, Memberships and Payments off; Affiliate Manager and Loyalty off). `--dry-run` shows the note text without writing it.
