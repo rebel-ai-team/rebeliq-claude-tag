@@ -2,7 +2,7 @@
 
 Companion to `Scribe Convert setup SOP.md`. Two SOPs, recorded with Denis on Mindy Bakker (2026-11-13) and updated on Brian Sanchez (2026-11-24). A VA was also finishing Mindy's account by hand, so Mindy "state seen" notes are reference only. The recorded source, with the same wording, is `docs/browser-steps-draft.md`.
 
-1. **Account Setup SOP** — A (agency-level, A1–A5) comes first, then the API run below, then B2–B7, then the A2P preparation SOP, then B1 last. Sites and Domains & URLs stay ON. Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done.
+1. **Account Setup SOP** — A (agency-level, A1–A5) comes first, then the API run below, then B2–B7, then the A2P preparation SOP, then B1 last. Sites stays ON only while the account is being worked on (B3/B4, P1); B1 turns the entire Sites group OFF, and the end state is 35/67 features on. Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done.
 2. **A2P preparation SOP** — P1 and P2. Runs after B2–B7 and before B1.
 
 B7 and P2 custom values are set with the GHL customValues API: `GET /locations/{id}/customValues`, match by fieldKey or name, `PUT /locations/{id}/customValues/{cvId}` with `{name, value}`. Update an existing id only. Never create a custom value for these.
@@ -21,9 +21,9 @@ The client's custom domain must already be connected in the sub-account (Setting
 
 ### Order (Denis, 2026-11-20, updated 2026-11-24)
 
-A (agency-level) comes first, then B2–B7, then the A2P preparation SOP, then B1 permissions last (Sites and Domains & URLs stay ON). Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done.
+A (agency-level) comes first, then B2–B7, then the A2P preparation SOP, then B1 permissions last. Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done.
 
-The API run (Steps 1–4 below; the 2026-11-13 notes called the automatable portion Steps 1–3) sits after A and before B2. It does not write the HubSpot note. B1 is last, after the A2P preparation SOP, because turning Sites off hides the Sites menu and blocks B3/B4. For now, keep Sites and Domains & URLs ON in B1. The completion note comes after B1.
+The API run (Steps 1–4 below; the 2026-11-13 notes called the automatable portion Steps 1–3) sits after A and before B2. It does not write the HubSpot note. B1 is last, after the A2P preparation SOP, because turning the Sites group off hides the Sites menu and blocks B3/B4 and P1. Keep Sites ON only while the account is being worked on (B3/B4, P1). In B1, turn the entire Sites group OFF (all 12: Analytics, Blogs, Chat Widget, Domains and URL Redirects, Forms, Funnels, QR Codes, Quizzes, Stores, Surveys, Webinars, Websites). The end state is 35/67 features on. The completion note comes after B1.
 
 ### A. Agency-level setup (do first) — Denis 2026-11-24
 
@@ -324,7 +324,7 @@ Via the API, as in B7: `GET /locations/{id}/customValues`, match by fieldKey or 
 
 ## B1. Sub-account settings > Features and Limits (run last)
 
-Run after the A2P preparation SOP. Sites and Domains & URLs stay ON.
+Run after the A2P preparation SOP. This is when the entire Sites group goes OFF. Sites stays ON only while the account is being worked on (B3/B4, P1).
 
 1. Agency Dashboard > left menu **Sub-Accounts**, wait for load.
 2. Search the client's name; sub-accounts are named `{friendly business name} - {First Last}`.
@@ -336,9 +336,9 @@ Run after the A2P preparation SOP. Sites and Domains & URLs stay ON.
    - **Marketing**: Affiliate Manager OFF, Loyalty OFF
    - **Memberships**: ALL OFF
    - **Payments**: ALL OFF
-   - **Sites**: ALL OFF (for now keep **Sites** and **Domains & URLs** ON)
+   - **Sites**: ALL OFF. The entire group, all 12 items: Analytics, Blogs, Chat Widget, Domains and URL Redirects, Forms, Funnels, QR Codes, Quizzes, Stores, Surveys, Webinars, Websites. Sites stays ON only while the account is being worked on (B3/B4, P1); this step is when it goes off.
    - Unchanged: limits, Automation, Calendar, CRM, Labs, Landing, Media Storage, Mobile App, Private Integrations, Reporting, Reputation Management.
-7. Click Save. No toast; the Save button greying out means it saved. Reload and verify (35 of 67 on with Sites fully off, verified on Mindy).
+7. Click Save. No toast; the Save button greying out means it saved. Reload and verify: 35/67 features on (Sites fully off; verified on Mindy).
 
 ## Write the HubSpot completion note
 
@@ -357,7 +357,7 @@ The note summarizes that account: the GHL user (and flags the email when it is s
 - Home Consultation A2P site is on `<name>.clixwithus.com` (P1, page paths cleaned). `<name>` is taken from the Domain custom value when it is already `https://<name>.clixwithus.com`
 - P2 custom values (DBA cleared, Known As, Domain = `https://<name>.clixwithus.com`)
 - Logo and headshot uploaded to the client's media library, headshot as profile photo and logo as Business Logo
-- B1 Features and Limits at 47/67 with the whole Sites group ON (AI Agents, Memberships and Payments off; Affiliate Manager and Loyalty off)
+- B1 Features and Limits at 35/67 with the entire Sites group OFF (Analytics, Blogs, Chat Widget, Domains and URL Redirects, Forms, Funnels, QR Codes, Quizzes, Stores, Surveys, Webinars, Websites). Sites was kept ON only while the account was being worked on (B3/B4, P1). AI Agents, Memberships and Payments off; Affiliate Manager and Loyalty off.
 
 `--dry-run` shows that text and does not post it. A second run does not write another note when one already contains **Convert account setup COMPLETE (final)**.
 

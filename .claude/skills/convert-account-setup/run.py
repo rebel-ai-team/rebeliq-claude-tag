@@ -344,9 +344,12 @@ def _completed_steps(custom_values):
         f"{domain_shown})",
         "Logo and headshot uploaded to the client's media library, "
         "headshot as profile photo and logo as Business Logo",
-        "B1 Features and Limits at 47/67 with the whole Sites group ON "
-        "(AI Agents, Memberships and Payments off; Affiliate Manager and "
-        "Loyalty off)",
+        "B1 Features and Limits at 35/67 with the entire Sites group OFF "
+        "(Analytics, Blogs, Chat Widget, Domains and URL Redirects, Forms, "
+        "Funnels, QR Codes, Quizzes, Stores, Surveys, Webinars, Websites). "
+        "Sites was kept ON only while the account was being worked on "
+        "(B3/B4, P1). AI Agents, Memberships and Payments off; "
+        "Affiliate Manager and Loyalty off",
     ]
     flags = []
     if not host:

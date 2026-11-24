@@ -8,9 +8,9 @@ A VA was also finishing Mindy Bakker's account by hand on 2026-11-13, so Mindy "
 The client's custom domain must already be connected in the sub-account (Settings > Domains & URLs) by Denis or the VA. Connecting it needs a GoDaddy login with 2FA, which the agent can't do.
 
 ## Order (Denis, 2026-11-20, updated 2026-11-24)
-A (agency-level) comes first, then B2-B7, then the A2P preparation SOP, then B1 permissions last (Sites and Domains & URLs stay ON). Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done.
+A (agency-level) comes first, then B2-B7, then the A2P preparation SOP, then B1 permissions last. Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done.
 
-The API run (Steps 1-3) sits after A and before B2. B2-B7 run after that API run has finished. The API run does not write the HubSpot note. B1 is last, after the A2P preparation SOP, because turning Sites off hides the Sites menu and blocks B3/B4. For now, keep Sites and Domains & URLs ON in B1. B1 also waits until the A2P preparation SOP is done (Denis 2026-11-24). The completion note comes after B1.
+The API run (Steps 1-3) sits after A and before B2. B2-B7 run after that API run has finished. The API run does not write the HubSpot note. B1 is last, after the A2P preparation SOP (Denis 2026-11-24), because turning the Sites group off hides the Sites menu and blocks B3/B4 and P1. Keep Sites ON only while the account is being worked on (B3/B4, P1). In B1, turn the entire Sites group OFF (all 12: Analytics, Blogs, Chat Widget, Domains and URL Redirects, Forms, Funnels, QR Codes, Quizzes, Stores, Surveys, Webinars, Websites). The end state is 35/67 features on. The completion note comes after B1.
 
 ## A. Agency-level setup (do FIRST) - Denis 2026-11-24
 All at the agency (rebel iQ) level, for the client's sub-account only.
@@ -32,9 +32,9 @@ All at the agency (rebel iQ) level, for the client's sub-account only.
    - Marketing: Affiliate Manager OFF, Loyalty OFF
    - Memberships: ALL OFF
    - Payments: ALL OFF
-   - Sites: ALL OFF (for now keep Sites and Domains & URLs ON)
+   - Sites: ALL OFF. The entire group, all 12 items: Analytics, Blogs, Chat Widget, Domains and URL Redirects, Forms, Funnels, QR Codes, Quizzes, Stores, Surveys, Webinars, Websites. Sites stays ON only while the account is being worked on (B3/B4, P1); this step is when it goes off.
    - Unchanged: limits, Automation, Calendar, CRM, Labs, Landing, Media Storage, Mobile App, Private Integrations, Reporting, Reputation Management.
-7. Click Save. No toast; the Save button greying out means it saved. Reload and verify (35 of 67 on with Sites fully off, verified on Mindy).
+7. Click Save. No toast; the Save button greying out means it saved. Reload and verify: 35/67 features on (Sites fully off; verified on Mindy).
 
 ## B2. Complete sub-account Business Info
 1. Enter the sub-account (Switch to Sub-Account, or the account switcher at the top of the left menu).
@@ -132,4 +132,4 @@ python run.py --final-note --service-id <id> --dry-run   # prints the note, writ
 python run.py --final-note --service-id <id>             # writes the note
 ```
 
-The note is headed "Convert account setup COMPLETE (final)". Only that heading is a duplicate; an older "Claude account setup completed (automated steps)" note does not block it. It summarizes the user (and flags an email that is still `@leadpops.com`), calendar, custom values set, and the end state: Misc site on misce.rebelconvert.com; Home Consultation A2P site on `<name>.clixwithus.com` (P1, page paths cleaned); P2 custom values (DBA cleared, Known As, Domain = `https://<name>.clixwithus.com`); logo and headshot uploaded to the client's media library, headshot as profile photo and logo as Business Logo; B1 Features and Limits at 47/67 with the whole Sites group ON (AI Agents, Memberships and Payments off; Affiliate Manager and Loyalty off). `--dry-run` shows the note text without writing it.
+The note is headed "Convert account setup COMPLETE (final)". Only that heading is a duplicate; an older "Claude account setup completed (automated steps)" note does not block it. It summarizes the user (and flags an email that is still `@leadpops.com`), calendar, custom values set, and the end state: Misc site on misce.rebelconvert.com; Home Consultation A2P site on `<name>.clixwithus.com` (P1, page paths cleaned); P2 custom values (DBA cleared, Known As, Domain = `https://<name>.clixwithus.com`); logo and headshot uploaded to the client's media library, headshot as profile photo and logo as Business Logo; B1 Features and Limits at 35/67 with the entire Sites group OFF (Analytics, Blogs, Chat Widget, Domains and URL Redirects, Forms, Funnels, QR Codes, Quizzes, Stores, Surveys, Webinars, Websites). Sites was kept ON only while the account was being worked on (B3/B4, P1). AI Agents, Memberships and Payments off; Affiliate Manager and Loyalty off. `--dry-run` shows the note text without writing it.

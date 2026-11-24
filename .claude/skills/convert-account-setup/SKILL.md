@@ -93,8 +93,10 @@ the user (flagging an email that is still `@leadpops.com`), calendar, custom
 values set, and the end state: Misc on `misce.rebelconvert.com`, Home
 Consultation A2P on `<name>.clixwithus.com` with P1 paths cleaned, P2 (DBA
 cleared, Known As, Domain = `https://<name>.clixwithus.com`), logo and
-headshot in the client's media library, and B1 at 47/67 with the whole Sites
-group ON. Your Slack summary of the API run should lead with anything that
+headshot in the client's media library, and B1 at 35/67 with the entire
+Sites group OFF (Analytics, Blogs, Chat Widget, Domains and URL Redirects,
+Forms, Funnels, QR Codes, Quizzes, Stores, Surveys, Webinars, Websites).
+Sites stays ON only while the account is being worked on (B3/B4, P1). Your Slack summary of the API run should lead with anything that
 needs attention. The note does not advance the pipeline stage.
 
 ## If auth fails
@@ -115,7 +117,7 @@ the account up next knows exactly where it stands.
 
 Two SOPs, in `docs/SOP.md`. The recorded source is `docs/browser-steps-draft.md`.
 
-- **Account Setup SOP** — A (agency-level, A1–A5) comes first, then this skill's API run, then B2–B7, then the A2P preparation SOP, then B1 permissions last. Sites and Domains & URLs stay ON. Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done. Both websites (Home Consultation A2P and Miscellaneous pages) go on `misce.rebelconvert.com`, never `<name>.clixwithus.com`, during Account Setup.
+- **Account Setup SOP** — A (agency-level, A1–A5) comes first, then this skill's API run, then B2–B7, then the A2P preparation SOP, then B1 permissions last. Sites stays ON only while the account is being worked on (B3/B4, P1); B1 turns the entire Sites group OFF, and the end state is 35/67 features on. Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done. Both websites (Home Consultation A2P and Miscellaneous pages) go on `misce.rebelconvert.com`, never `<name>.clixwithus.com`, during Account Setup.
 - **A2P preparation SOP** — P1 (clean Home Consultation A2P page paths) and P2 (A2P custom values). A human must already have connected that site to `<name>.clixwithus.com`. Miscellaneous pages stay on `misce.rebelconvert.com`.
 
 B7 and P2 custom values are set with the GHL customValues API: update existing ids only, never create.
