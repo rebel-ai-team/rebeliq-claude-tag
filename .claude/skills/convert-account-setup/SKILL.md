@@ -1,6 +1,6 @@
 ---
 name: convert-account-setup
-description: Run the automatable portion of Rebel Convert (white-labeled GoHighLevel) client account setup. Use when new client accounts have landed in the HubSpot Digital Pipeline and need their GHL sub-account configured — creates the GHL user, re-hosts the client's logo/headshot into their own media library, activates and assigns their calendar, sets custom values, and logs a completion note on the HubSpot Service record. Also use when asked to check whether any accounts are waiting for setup. Manual follow-up is the Account Setup SOP and the A2P preparation SOP in docs/SOP.md.
+description: Run the automatable portion of Rebel Convert (white-labeled GoHighLevel) client account setup. Use when new client accounts have landed in the HubSpot Digital Pipeline and need their GHL sub-account configured — creates the GHL user, re-hosts the client's logo/headshot into their own media library, activates and assigns their calendar, and sets custom values. Does not write the HubSpot completion note; that is a separate final step after both SOPs, including B1. Also use when asked to check whether any accounts are waiting for setup. Manual follow-up is the Account Setup SOP and the A2P preparation SOP in docs/SOP.md.
 ---
 
 # Convert Account Setup
@@ -18,14 +18,23 @@ pip install -r requirements.txt          # if requests isn't already available
 cd .claude/skills/convert-account-setup
 
 python run.py --dry-run                  # always do this first
-python run.py                            # then the real run
+python run.py                            # then the real run; writes no HubSpot note
 python run.py --service-id 591889255682  # one specific account
+
+# Only after A1-A5, B2-B7, the A2P preparation SOP, and B1:
+python run.py --final-note --service-id 591889255682 --dry-run
+python run.py --final-note --service-id 591889255682
 ```
 
 `--dry-run` writes nothing. It prints the accounts it would process and every
-value it would set. **Always dry-run first and actually read the output** — the
+value it would set. With `--final-note`, it prints the completion note and does
+not post it. **Always dry-run first and actually read the output** — the
 point is to catch bad source data before it's written into a client's account,
 which is the one thing a script can't judge for you.
+
+The normal run does not write the HubSpot note. Write the HubSpot completion
+note (run the final-note command) once everything, including B1, is done. That
+command does not advance the pipeline stage.
 
 ## Required environment
 
@@ -39,11 +48,13 @@ Hosts that must be reachable: `services.leadconnectorhq.com`, `api.hubapi.com`,
 
 Service records in the HubSpot Digital Pipeline, stage **Campaign/Account
 Setup**, named `New Convert Account - *`, that don't already have a note
-containing "Claude account setup completed". That note is the done-signal.
+containing "Claude account setup completed". That note is the done-signal,
+and it is written only by `--final-note` after both SOPs, including B1. Until
+then the account stays eligible for the API run. Do not run that API setup
+again after B7 or P2: Step 4 would write its values back over the later ones.
 
-**Do not advance the pipeline stage.** Significant manual SOP work still lives
-inside that same stage, so moving it would tell the team the account is further
-along than it is.
+**Do not advance the pipeline stage.** Not from the API run, and not from
+`--final-note`. Phone # purchase and Closebot still sit in this same stage.
 
 ## What to do with the output
 
@@ -59,7 +70,8 @@ summary, so don't bury them. Judgment calls that are yours, not the script's:
   HubSpot sync bug). Anything else that looks off — a legal business name that
   doesn't match the Jotform answer, an EIN flag contradicting the submission, a
   website URL pointing somewhere unrelated — is yours to notice and flag. It
-  won't block setup; it belongs in the note and your report.
+  won't block setup; it belongs in your report. The completion note is written
+  later and does not replay these ISSUE lines.
 - **A missing custom value.** If the script says a custom value name wasn't
   found on the account, that likely means the snapshot template changed. Report
   it rather than guessing at a replacement, and do **not** create a new custom
@@ -71,10 +83,12 @@ summary, so don't bury them. Judgment calls that are yours, not the script's:
 
 ## Reporting
 
-After a real run, report per account: what got done, what issues came up, and
-what's still waiting on a human. The script writes the same summary as a note on
-the HubSpot Service record automatically — your Slack summary should be the
-readable version of that, leading with anything that needs attention.
+After a real API run, report per account: what got done, what issues came up,
+and what's still waiting on a human. The script does not write a HubSpot note
+for that run. After A1–A5, B2–B7, P1–P2, and B1, run `--final-note` (dry-run
+first). That note summarizes the user, calendar, custom values set, and those
+manual steps. Your Slack summary of the API run should lead with anything that
+needs attention. The note does not advance the pipeline stage.
 
 ## If auth fails
 
@@ -94,7 +108,7 @@ the account up next knows exactly where it stands.
 
 Two SOPs, in `docs/SOP.md`. The recorded source is `docs/browser-steps-draft.md`.
 
-- **Account Setup SOP** — A (agency-level, A1–A5) comes first, then this skill's API run, then B2–B7, then the A2P preparation SOP, then B1 permissions last. Sites and Domains & URLs stay ON. Both websites (Home Consultation A2P and Miscellaneous pages) go on `misce.rebelconvert.com`, never `<name>.clixwithus.com`, during Account Setup.
+- **Account Setup SOP** — A (agency-level, A1–A5) comes first, then this skill's API run, then B2–B7, then the A2P preparation SOP, then B1 permissions last. Sites and Domains & URLs stay ON. Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done. Both websites (Home Consultation A2P and Miscellaneous pages) go on `misce.rebelconvert.com`, never `<name>.clixwithus.com`, during Account Setup.
 - **A2P preparation SOP** — P1 (clean Home Consultation A2P page paths) and P2 (A2P custom values). A human must already have connected that site to `<name>.clixwithus.com`. Miscellaneous pages stay on `misce.rebelconvert.com`.
 
 B7 and P2 custom values are set with the GHL customValues API: update existing ids only, never create.

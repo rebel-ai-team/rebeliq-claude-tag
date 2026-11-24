@@ -2,7 +2,7 @@
 
 Companion to `Scribe Convert setup SOP.md`. Two SOPs, recorded with Denis on Mindy Bakker (2026-11-13) and updated on Brian Sanchez (2026-11-24). A VA was also finishing Mindy's account by hand, so Mindy "state seen" notes are reference only. The recorded source, with the same wording, is `docs/browser-steps-draft.md`.
 
-1. **Account Setup SOP** — A (agency-level, A1–A5) comes first, then the API run below, then B2–B7, then the A2P preparation SOP, then B1 last. Sites and Domains & URLs stay ON.
+1. **Account Setup SOP** — A (agency-level, A1–A5) comes first, then the API run below, then B2–B7, then the A2P preparation SOP, then B1 last. Sites and Domains & URLs stay ON. Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done.
 2. **A2P preparation SOP** — P1 and P2. Runs after B2–B7 and before B1.
 
 B7 and P2 custom values are set with the GHL customValues API: `GET /locations/{id}/customValues`, match by fieldKey or name, `PUT /locations/{id}/customValues/{cvId}` with `{name, value}`. Update an existing id only. Never create a custom value for these.
@@ -21,9 +21,9 @@ The client's custom domain must already be connected in the sub-account (Setting
 
 ### Order (Denis, 2026-11-20, updated 2026-11-24)
 
-A (agency-level) comes first, then B2–B7, then the A2P preparation SOP, then B1 permissions last (Sites and Domains & URLs stay ON).
+A (agency-level) comes first, then B2–B7, then the A2P preparation SOP, then B1 permissions last (Sites and Domains & URLs stay ON). Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done.
 
-The API run (Steps 1–5 below; the 2026-11-13 notes called the automatable portion Steps 1–3) sits after A and before B2. B1 is last, after the A2P preparation SOP, because turning Sites off hides the Sites menu and blocks B3/B4. For now, keep Sites and Domains & URLs ON in B1.
+The API run (Steps 1–4 below; the 2026-11-13 notes called the automatable portion Steps 1–3) sits after A and before B2. It does not write the HubSpot note. B1 is last, after the A2P preparation SOP, because turning Sites off hides the Sites menu and blocks B3/B4. For now, keep Sites and Domains & URLs ON in B1. The completion note comes after B1.
 
 ### A. Agency-level setup (do first) — Denis 2026-11-24
 
@@ -38,7 +38,7 @@ All at the agency (rebel iQ) level, for the client's sub-account only.
 
 ## API run (Account Setup SOP)
 
-Steps 1–5 are the API run. They sit after A1–A5 and before B2. B7 and P2 are a later custom-values pass (existing ids only, never create), not a second copy of Step 4.
+Steps 1–4 are the API run. They sit after A1–A5 and before B2. The run does not write a HubSpot note and does not advance the pipeline stage. B7 and P2 are a later custom-values pass (existing ids only, never create), not a second copy of Step 4. Do not run the API setup again after B7 or P2: Step 4 would write its own values back over those later ones.
 
 ## Authentication (rewritten 2026-09-28 — read this first)
 
@@ -225,15 +225,9 @@ Fields marked BLANK: do not write anything — leave the custom value as-is (emp
 
 B7 and P2 are a later pass on the same endpoint. `GET /locations/{locationId}/customValues`, match by fieldKey or name, `PUT /locations/{locationId}/customValues/{id}` with `{name, value}`. Update the existing id only — never create. Re-read afterwards; the list GET can lag a fresh PUT, so re-read that one value before retrying. The create exception above the table is only for a missing AI Bot - Calendar ID. It does not apply to B7 or P2.
 
-## Step 5: Log a completion note on the HubSpot Service record
+## Step 5: Do not write the HubSpot note during the API run
 
-Once Steps 1–4 are done (or as far as they can go), leave a note on the HubSpot Service record (object `0-162`) so there's a visible audit trail of what the agent did and what's still manual.
-
-- Association type between Notes and the Service object: `associationTypeId: 837` (`associationCategory: "HUBSPOT_DEFINED"`), name `note_to_service` — found via `GET /crm/v3/associations/notes/0-162/types`. Not the same type ID used for note→contact (that's `202`, see `hubspot_client.py`).
-- Create via `POST /crm/v3/objects/notes` with `hs_note_body` (HTML ok), `hs_timestamp`, and `associations: [{ "to": { "id": <serviceRecordId> }, "types": [{ "associationCategory": "HUBSPOT_DEFINED", "associationTypeId": 837 }] }]`.
-- Content: a short summary of what was completed (user, images, calendar, custom values — mention counts), **any issues actually encountered on this specific account** (data gaps, blocked fields, anything that needed a fallback or looked off), and what's still left for a human. Keep it factual and specific to that run, not a copy-paste template — the point is an honest per-account record, not a checkbox.
-
-Validated on Mark Whitaker's Service record (`586065166437`, note id `116698898488`) on 2026-09-10.
+The API run ends at Step 4. `run.py` without `--final-note` does not write a HubSpot note. Denis (2026-11-24): the completion note is written only at the very end, after the Account Setup SOP and the A2P preparation SOP, including B1. See **Write the HubSpot completion note** at the end of this doc. Do not advance the pipeline stage.
 
 ## B2. Complete sub-account Business Info
 
@@ -345,3 +339,20 @@ Run after the A2P preparation SOP. Sites and Domains & URLs stay ON.
    - **Sites**: ALL OFF (for now keep **Sites** and **Domains & URLs** ON)
    - Unchanged: limits, Automation, Calendar, CRM, Labs, Landing, Media Storage, Mobile App, Private Integrations, Reporting, Reputation Management.
 7. Click Save. No toast; the Save button greying out means it saved. Reload and verify (35 of 67 on with Sites fully off, verified on Mindy).
+
+## Write the HubSpot completion note
+
+Write the HubSpot completion note (run the final-note command) once everything, including B1, is done. Not during the API run. This note is the done-signal ("Claude account setup completed"). It does not advance the pipeline stage.
+
+From `.claude/skills/convert-account-setup`:
+
+```bash
+python run.py --final-note --service-id <id> --dry-run   # prints the note, writes nothing
+python run.py --final-note --service-id <id>             # writes the note
+```
+
+The note summarizes that account: the GHL user, the Mortgage Consultation calendar, the custom values that are set (and the ones left empty), and that the manual browser steps are completed — A1–A5, B2–B7, P1–P2, and B1. `--dry-run` shows that text and does not post it. A second run does not write another note if one is already on the Service record.
+
+Mechanics, unchanged: association type between Notes and the Service object is `associationTypeId: 837` (`associationCategory: "HUBSPOT_DEFINED"`), name `note_to_service` — found via `GET /crm/v3/associations/notes/0-162/types`. Not the same type ID used for note→contact (that's `202`, see `hubspot_client.py`). Create via `POST /crm/v3/objects/notes` with `hs_note_body` (HTML ok), `hs_timestamp`, and `associations: [{ "to": { "id": <serviceRecordId> }, "types": [{ "associationCategory": "HUBSPOT_DEFINED", "associationTypeId": 837 }] }]`. There is no pipeline-stage update in that call.
+
+An earlier note, written when the note still went out with the API run, was validated on Mark Whitaker's Service record (`586065166437`, note id `116698898488`) on 2026-09-10.

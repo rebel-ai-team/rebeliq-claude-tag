@@ -8,9 +8,9 @@ A VA was also finishing Mindy Bakker's account by hand on 2026-11-13, so Mindy "
 The client's custom domain must already be connected in the sub-account (Settings > Domains & URLs) by Denis or the VA. Connecting it needs a GoDaddy login with 2FA, which the agent can't do.
 
 ## Order (Denis, 2026-11-20, updated 2026-11-24)
-A (agency-level) comes first, then B2-B7, then the A2P preparation SOP, then B1 permissions last (Sites and Domains & URLs stay ON).
+A (agency-level) comes first, then B2-B7, then the A2P preparation SOP, then B1 permissions last (Sites and Domains & URLs stay ON). Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done.
 
-The API run (Steps 1-3) sits after A and before B2. B2-B7 run after that API run has finished. B1 is last, after the A2P preparation SOP, because turning Sites off hides the Sites menu and blocks B3/B4. For now, keep Sites and Domains & URLs ON in B1. B1 also waits until the A2P preparation SOP is done (Denis 2026-11-24).
+The API run (Steps 1-3) sits after A and before B2. B2-B7 run after that API run has finished. The API run does not write the HubSpot note. B1 is last, after the A2P preparation SOP, because turning Sites off hides the Sites menu and blocks B3/B4. For now, keep Sites and Domains & URLs ON in B1. B1 also waits until the A2P preparation SOP is done (Denis 2026-11-24). The completion note comes after B1.
 
 ## A. Agency-level setup (do FIRST) - Denis 2026-11-24
 All at the agency (rebel iQ) level, for the client's sub-account only.
@@ -121,3 +121,15 @@ Via the API (as in B7): `GET /locations/{id}/customValues`, match by fieldKey/na
 - DBA (`a2p_website__dba_name`): EMPTY unless the client has a real DBA. B7 fills it from the friendly business name (e.g. "Brian Sanchez - Yeti Loans"), which is not a DBA, so clear it.
 - `known_as_business_name`: if it contains "loan" or "mortgage" (any case), set it to the client's first and last name (e.g. "Brian Sanchez"). Otherwise leave it.
 - `domain`: `https://<the A2P site's clixwithus subdomain>`, no trailing slash, e.g. `https://briansanchez.clixwithus.com`.
+
+## Final step: Write the HubSpot completion note
+Write the HubSpot completion note (run the final-note command) once everything, including B1, is done. The API run (`run.py` without this flag) does not write it, and it does not advance the pipeline stage.
+
+From `.claude/skills/convert-account-setup`:
+
+```bash
+python run.py --final-note --service-id <id> --dry-run   # prints the note, writes nothing
+python run.py --final-note --service-id <id>             # writes the note
+```
+
+The note summarizes that account: user, calendar, custom values set, and the manual browser steps A1-A5, B2-B7, P1-P2, B1 completed. `--dry-run` shows the note text without writing it.

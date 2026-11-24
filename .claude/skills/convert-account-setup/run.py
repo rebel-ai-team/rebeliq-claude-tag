@@ -1,15 +1,24 @@
 """Run the automatable portion of Convert account setup.
 
+The normal run does not write the HubSpot completion note. That note is the
+done-signal and is written only after the Account Setup SOP and the A2P
+preparation SOP, including B1, via `--final-note`.
+
 Usage:
     python run.py --dry-run              # report what would happen, write nothing
     python run.py                        # process every unprocessed account
     python run.py --service-id 586457786902
+    python run.py --final-note --service-id 586457786902 --dry-run
+    python run.py --final-note --service-id 586457786902
 """
 
 import argparse
 import datetime
+import html
 import re
 import sys
+
+import requests
 
 import ghl_client
 import sources
@@ -18,6 +27,23 @@ CALENDAR_NAME = "Mortgage Consultation"
 IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 STANDARD_PASSWORD = "RebelConvert123!"
 COMPLETION_MARKER = "Claude account setup completed"
+
+# Attested by running --final-note, which is only done after these are finished.
+# The command does not re-check the browser; it records that they are done.
+MANUAL_STEPS_COMPLETED = [
+    "A1\u2013A5 agency-level setup (Phone linked to LeadConnector; "
+    "Workflow Premium Features off; External AI Models off; Domain Purchase off; "
+    "AI Agents off)",
+    "B2 Business Profile",
+    "B3 Home Consultation A2P on misce.rebelconvert.com",
+    "B4 Miscellaneous pages on misce.rebelconvert.com, page URLs collected",
+    "B5 user assigned in 01. iQ - New Lead Created",
+    "B6 all workflows published",
+    "B7 custom values",
+    "P1 A2P page paths cleaned",
+    "P2 A2P custom values",
+    "B1 Features and Limits (Sites and Domains & URLs left ON)",
+]
 
 # Mirrors the permissions on an existing correctly-configured account.
 STANDARD_PERMISSIONS = {
@@ -276,30 +302,132 @@ def process(service, company_tok, dry_run):
         loc.update_user(user["id"], email=real_email)
         done.append(f"real email submitted ({real_email}) — applies asynchronously")
 
+    for d in done:
+        print(f"  done: {d}")
     for i in issues:
         print(f"  ISSUE: {i}")
     return {"service_id": service_id, "name": name, "done": done, "issues": issues}
 
 
-def note_html(result):
-    done = "".join(f"- {d}<br>" for d in result["done"])
-    issues = ("".join(f"- {i}<br>" for i in result["issues"])
-              if result["issues"] else "none for this account.<br>")
-    return (
-        f"<strong>{COMPLETION_MARKER}</strong> (automated steps)<br><br>"
-        f"<u>Completed:</u><br>{done}<br>"
-        f"<u>Issues encountered:</u><br>{issues}<br>"
-        "<u>Still needs a human:</u> Business Profile / A2P compliance info, "
-        "Domains, Sites/website build, Workflows setup, Phone # purchase, "
-        "Closebot AI bot connection."
-    )
+def load_service(service_id):
+    """One Service record, by id. Does not change the pipeline stage."""
+    for service in sources.services_in_stage():
+        if service["id"] == service_id:
+            return service
+    r = requests.get(
+        f"{sources.HS_BASE}/crm/v3/objects/{sources.SERVICE_OBJECT}/{service_id}",
+        headers=sources._hs_headers(),
+        params={"properties": ",".join(sources.SERVICE_PROPERTIES)},
+        timeout=30)
+    r.raise_for_status()
+    return r.json()
+
+
+def _note_lines(service, loc):
+    """Readable lines for the completion note. `loc` is the GHL location client."""
+    props = service["properties"]
+    lines = [
+        "Written after the Account Setup SOP and the A2P preparation SOP, "
+        "including B1. The pipeline stage was not changed.",
+        "",
+        f"Service: {props.get('hs_name') or service['id']} ({service['id']})",
+        f"Location: {loc.id}",
+        "",
+        "User:",
+    ]
+    users = loc.users()
+    if not users:
+        lines.append("- none")
+    for user in users:
+        email = user.get("email") or ""
+        lines.append(
+            f"- {user.get('name') or '(no name)'} ({user.get('id')})"
+            + (f" {email}" if email else ""))
+    cal = loc.calendar_by_name(CALENDAR_NAME)
+    members = ", ".join(
+        m.get("userId", "") for m in (cal.get("teamMembers") or [])) or "none"
+    lines += [
+        "",
+        "Calendar:",
+        f"- {cal.get('name')} ({cal.get('id')}), active={cal.get('isActive')}, "
+        f"assigned user ids: {members}",
+        "",
+        "Custom values set:",
+    ]
+    filled, empty = [], []
+    for cv in sorted(loc.custom_values(), key=lambda c: (c.get("name") or "").lower()):
+        name = cv.get("name") or cv.get("fieldKey") or cv.get("id")
+        value = cv.get("value")
+        if value is None or str(value).strip() == "":
+            empty.append(name)
+        else:
+            filled.append(f"- {name}: {value}")
+    lines.extend(filled or ["- none"])
+    lines += ["", "Custom values left empty:"]
+    lines.extend(f"- {name}" for name in empty)
+    if not empty:
+        lines.append("- none")
+    lines += ["", "Manual browser steps completed:"]
+    lines.extend(f"- {step}" for step in MANUAL_STEPS_COMPLETED)
+    return lines
+
+
+def note_html_from_lines(lines):
+    body = []
+    for line in lines:
+        body.append("<br>" if line == "" else html.escape(line) + "<br>")
+    return (f"<strong>{html.escape(COMPLETION_MARKER)}</strong><br><br>"
+            + "".join(body))
+
+
+def write_final_note(service, company_tok, dry_run):
+    """Write the completion note. Never updates the Service pipeline stage.
+
+    A normal setup run must not call this. It runs only from `--final-note`,
+    after A1–A5, the API run, B2–B7, P1–P2, and B1 are done.
+    """
+    service_id = service["id"]
+    name = service["properties"].get("hs_name") or service_id
+    print(f"\n=== final note for {name} (service {service_id})")
+    already = any(COMPLETION_MARKER in (n or "")
+                  for n in sources.service_notes(service_id))
+    location_id = sources.location_id_from_service(service["properties"])
+    if not location_id:
+        print("  SKIP: no GHL location id in convert_location_link")
+        return 1
+    loc = ghl_client.Location(location_id, company_tok)
+    lines = _note_lines(service, loc)
+    text = "\n".join(lines)
+    print(text)
+    if dry_run:
+        print("\n  [dry-run] note not written")
+        if already:
+            print("  a completion note is already on this Service record; "
+                  "a real run would not write another")
+        return 0
+    if already:
+        print("  completion note already on this Service record; not writing another")
+        return 0
+    ts = datetime.datetime.now(datetime.timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%SZ")
+    note_id = sources.create_service_note(
+        service_id, note_html_from_lines(lines), ts)
+    print(f"  note {note_id} written (pipeline stage unchanged)")
+    return 0
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--service-id")
+    ap.add_argument(
+        "--final-note", action="store_true",
+        help="Write the HubSpot completion note for --service-id. "
+             "Run only after Account Setup, the A2P preparation SOP, and B1. "
+             "Does not advance the pipeline stage.")
     args = ap.parse_args()
+    if args.final_note and not args.service_id:
+        ap.error("--final-note requires --service-id")
 
     try:
         company_tok = ghl_client.company_token()
@@ -307,17 +435,12 @@ def main():
         print(f"AUTH FAILED — needs a human: {e}", file=sys.stderr)
         return 2
 
+    if args.final_note:
+        return write_final_note(load_service(args.service_id), company_tok,
+                                args.dry_run)
+
     if args.service_id:
-        candidates = [s for s in sources.services_in_stage()
-                      if s["id"] == args.service_id]
-        if not candidates:
-            r = __import__("requests").get(
-                f"{sources.HS_BASE}/crm/v3/objects/{sources.SERVICE_OBJECT}/{args.service_id}",
-                headers=sources._hs_headers(),
-                params={"properties": ",".join(sources.SERVICE_PROPERTIES)},
-                timeout=30)
-            r.raise_for_status()
-            candidates = [r.json()]
+        candidates = [load_service(args.service_id)]
     else:
         candidates = []
         for s in sources.services_in_stage():
@@ -336,12 +459,13 @@ def main():
         except Exception as e:  # noqa: BLE001 - one bad account shouldn't stop the batch
             print(f"  FAILED: {e}", file=sys.stderr)
             continue
-        if result and not args.dry_run:
-            ts = datetime.datetime.now(datetime.timezone.utc).strftime(
-                "%Y-%m-%dT%H:%M:%SZ")
-            note_id = sources.create_service_note(result["service_id"],
-                                                  note_html(result), ts)
-            print(f"  note {note_id} written")
+        if not result:
+            continue
+        # The completion note is not written here. It is the done-signal and
+        # waits until both SOPs, including B1, are finished.
+        print("  HubSpot note not written. After A1-A5, B2-B7, the A2P "
+              "preparation SOP, and B1:")
+        print(f"    python run.py --final-note --service-id {result['service_id']}")
     return 0
 
 
