@@ -1,6 +1,6 @@
 ---
 name: convert-account-setup
-description: Run the automatable portion of Rebel Convert (white-labeled GoHighLevel) client account setup. Use when new client accounts have landed in the HubSpot Digital Pipeline and need their GHL sub-account configured — creates the GHL user, re-hosts the client's logo/headshot into their own media library, activates and assigns their calendar, sets custom values, and logs a completion note on the HubSpot Service record. Also use when asked to check whether any accounts are waiting for setup.
+description: Run the automatable portion of Rebel Convert (white-labeled GoHighLevel) client account setup. Use when new client accounts have landed in the HubSpot Digital Pipeline and need their GHL sub-account configured — creates the GHL user, re-hosts the client's logo/headshot into their own media library, activates and assigns their calendar, sets custom values, and logs a completion note on the HubSpot Service record. Also use when asked to check whether any accounts are waiting for setup. Manual follow-up is the Account Setup SOP and the A2P preparation SOP in docs/SOP.md.
 ---
 
 # Convert Account Setup
@@ -64,7 +64,8 @@ summary, so don't bury them. Judgment calls that are yours, not the script's:
   found on the account, that likely means the snapshot template changed. Report
   it rather than guessing at a replacement, and do **not** create a new custom
   value to fill the gap — see the AI Bot - Calendar ID warning in `docs/SOP.md`
-  for why inventing fields is dangerous.
+  for why inventing fields is dangerous. B7 and P2 are the same rule: update an
+  existing custom value id only, never create.
 - **Anything you haven't seen before.** Stop and report rather than improvising
   against a live client account.
 
@@ -85,17 +86,21 @@ minutes and is documented in `docs/SOP.md` under Authentication.
 ## Stays manual
 
 Not automatable — no API exists for these, or they need a human decision:
-Business Profile / A2P compliance info, Domains (GoDaddy OAuth), Sites/website
-build, Workflows setup, Phone # purchase, Closebot AI bot connection. Agency-level
-feature toggles too. Always name these in your report so whoever picks the account
-up next knows exactly where it stands. The recorded browser steps are in
-`docs/SOP.md` under **Manual browser process (after the API run)** (B1–B7).
-B7 (Custom Values edits) is still to be completed on the next account.
+Business Profile, connecting the custom domain (GoDaddy login with 2FA),
+assigning the two website domains, workflow assignment and publish, Phone #
+purchase, and Closebot. Agency-level toggles (A1–A5) and Features and Limits
+(B1) are browser steps too. Always name these in your report so whoever picks
+the account up next knows exactly where it stands.
+
+Two SOPs, in `docs/SOP.md`. The recorded source is `docs/browser-steps-draft.md`.
+
+- **Account Setup SOP** — A (agency-level, A1–A5) comes first, then this skill's API run, then B2–B7, then the A2P preparation SOP, then B1 permissions last. Sites and Domains & URLs stay ON. Both websites (Home Consultation A2P and Miscellaneous pages) go on `misce.rebelconvert.com`, never `<name>.clixwithus.com`, during Account Setup.
+- **A2P preparation SOP** — P1 (clean Home Consultation A2P page paths) and P2 (A2P custom values). A human must already have connected that site to `<name>.clixwithus.com`. Miscellaneous pages stay on `misce.rebelconvert.com`.
+
+B7 and P2 custom values are set with the GHL customValues API: update existing ids only, never create.
+
+**Known issue (2026-11-24):** skip logo and headshot. Jotform image links 302 to the Jotform login without a session, and the signed S3 link from the API key 404s, even for uploads that used to work. Leave `business_logo` empty until a file is in the client's own media library.
 
 ## Reference
 
-`docs/SOP.md` is the full procedure, including the complete 32-field custom
-values mapping, the field-source precedence rules, and every API gotcha found
-the hard way (the calendar endpoint silently resetting omitted fields, the
-`calendar_id` custom value the booking bot depends on, the asynchronous email
-swap, the Jotform login wall). Read it before changing anything in the scripts.
+`docs/SOP.md` is the full procedure: the Account Setup SOP (A1–A5, the API run, B2–B7, B1 last) and the A2P preparation SOP (P1, P2), including the 32-field custom values mapping, the field-source precedence rules, and every API gotcha found the hard way (the calendar endpoint silently resetting omitted fields, the `calendar_id` custom value the booking bot depends on, the asynchronous email swap, the Jotform login wall). `docs/browser-steps-draft.md` is the recorded walkthrough those SOPs were folded from. Read both before changing anything in the scripts.
