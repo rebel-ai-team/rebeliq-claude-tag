@@ -2,7 +2,7 @@
 
 Companion to `Scribe Convert setup SOP.md`. Two SOPs, recorded with Denis on Mindy Bakker (2026-11-13) and updated on Brian Sanchez (2026-11-24). A VA was also finishing Mindy's account by hand, so Mindy "state seen" notes are reference only. The recorded source, with the same wording, is `docs/browser-steps-draft.md`.
 
-1. **Account Setup SOP** — A (agency-level, A1–A5) comes first, then the API run below, then B2–B7, then the A2P preparation SOP, then B1 last. Sites stays ON only while the account is being worked on (B3/B4, P1); B1 turns the entire Sites group OFF, and the end state is 35/67 features on. Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done.
+1. **Account Setup SOP** — A (agency-level, A1–A6) comes first, then the API run below, then B2–B7, then the A2P preparation SOP, then B1 last. Sites stays ON only while the account is being worked on (B3/B4, P1); B1 turns the entire Sites group OFF, and the end state is 35/67 features on. Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done.
 2. **A2P preparation SOP** — P1 and P2. Runs after B2–B7 and before B1.
 
 B7 and P2 custom values are set with the GHL customValues API: `GET /locations/{id}/customValues`, match by fieldKey or name, `PUT /locations/{id}/customValues/{cvId}` with `{name, value}`. Update an existing id only. Never create a custom value for these.
@@ -34,11 +34,12 @@ All at the agency (rebel iQ) level, for the client's sub-account only.
 - **A3** Agency Settings > Workflow - External AI Models: disable for the client.
 - **A4** Agency Settings > Domain Purchase: disable for the client. The toggle may not stick the first time; wait a few seconds, reload and check.
 - **A5** Agency main menu (not Settings) > AI Suite > Plans & Limits tab: AI Agents off for the client. Ignore the "Set $50.00 default" banner.
+- **A6 Reselling** (Denis 2026-11-25): Agency > Sub-Accounts, search the client's sub-account, click the name to open its settings panel (direct URL `https://app.rebelconvert.com/accounts/detail/{locationId}`), open the "Reselling" tab, turn ALL toggles OFF. There are 10: WhatsApp, Prospecting, Branded Client Portal Mobile App, Listings, WordPress, AI Employee, SEO (By Search Atlas), Workflow Pro - Pricing Tiers, Dedicated IP, Ad Manager. No separate Save needed: each card's Save greys out once toggled; reload and verify all off.
 - A2–A4 pages each have a per-account Enable/Disable Feature toggle (Rebilling stays off).
 
 ## API run (Account Setup SOP)
 
-Steps 1–4 are the API run. They sit after A1–A5 and before B2. The run does not write a HubSpot note and does not advance the pipeline stage. B7 and P2 are a later custom-values pass (existing ids only, never create), not a second copy of Step 4. Do not run the API setup again after B7 or P2: Step 4 would write its own values back over those later ones.
+Steps 1–4 are the API run. They sit after A1–A6 and before B2. The run does not write a HubSpot note and does not advance the pipeline stage. B7 and P2 are a later custom-values pass (existing ids only, never create), not a second copy of Step 4. Do not run the API setup again after B7 or P2: Step 4 would write its own values back over those later ones.
 
 ## Authentication (rewritten 2026-09-28 — read this first)
 
@@ -214,7 +215,7 @@ Mechanics (unchanged from earlier analysis): GHL custom value IDs are randomly r
 | From Name | First + last name of the associated HubSpot Contact |
 | Known As Business Name (`known_as_business_name`) | HS service prop `friendly_business_name` on this pass. P2: if the value contains "loan" or "mortgage" (any case), set it to the client's first and last name (e.g. "Brian Sanchez"). Otherwise leave it. Existing id only. |
 | Link - 1003 Application | HS service prop `n1003_url` (or the property named `1003Url`/similar — confirm exact name per record) |
-| Link - Calendar - Free Mortgage Consultation (`link__calendar__free_mortgage_consultation`) | B7: full URL of the Miscellaneous "Book A Consultation" page (`https://misce.rebelconvert.com/mortgage-consultation-NNNN`). Not the calendar widget link. The app has no funnels scope, so read the URL in the browser (B4). Existing id only. |
+| Link - Calendar - Free Mortgage Consultation (`link__calendar__free_mortgage_consultation`) | B7: full URL of the Miscellaneous "Book A Consultation" page (`https://misce.rebelconvert.com/mortgage-consultation-NNNN`). Not the calendar widget link. The app has no funnels scope, so read the URL in the browser (B4). Before writing it, curl that URL and confirm it embeds this client's own calendar id. Existing id only. |
 | Link - Page - Appointment No Show (`link__page__appointment_no_show`) | B7: full URL of the Miscellaneous "No Show" page (`misce.rebelconvert.com/convertnoshow-...`). Existing id only. |
 | Link - Page - Showed and qualified (`link__page__showed_and_qualified`) | B7: full URL of the "Showed and qualified" page (`.../convertqualified-...`). Existing id only. |
 | Link - Page - Showed and unqualified (`link__page__showed_and_unqualified`) | B7: full URL of the "Showed and not qualified" page (`misce.rebelconvert.com/convertnotqualified-...`). Existing id only. |
@@ -263,7 +264,9 @@ After the API run. Inside the sub-account.
 
 1. Sites > Websites > **Miscellaneous pages** > Settings. Domain `misce.rebelconvert.com`, the same domain as Home Consultation A2P (B3). Never `<name>.clixwithus.com`. Save, reload, check.
 2. GHL adds numeric suffixes to the site path (e.g. `/miscellaneous-pages-793351`) and every page path, with or without the alert "Some paths are updated due to url conflicts with other funnels!". That's normal.
-3. Pages tab: copy each page's public URL. 5 pages: Book A Consultation (mortgage-consultation-NNNN), No Show Page, Showed and not qualified, Showed and qualified, Referral Page. Always read the suffixes from the page.
+3. NEVER remove or edit the numeric suffixes on `misce.rebelconvert.com` page paths (Denis 2026-11-25). Every account shares that subdomain, so GHL's numbers keep paths unique. Only the per-client `<name>.clixwithus.com` A2P site gets numbers removed (P1).
+4. Pages tab: copy each page's public URL. 5 pages: Book A Consultation (mortgage-consultation-NNNN), No Show Page, Showed and not qualified, Showed and qualified, Referral Page. Always read the suffixes from the page.
+5. Exception seen on Moses Shaukat (2026-11-25): his Misc pages had no GHL-added numbers (e.g. `/mortgage-consultation`, `/convertnoshow-1161`) and collided with another account (the public `/mortgage-consultation` showed Infinity Mortgage Group). Re-saving the domain did not renumber them. Fix: page three dots > Settings, append a unique random 4-digit suffix to each path (e.g. `/mortgage-consultation-4827`, `/convertnoshow-1161-7351`), then verify each public URL shows the client's own content/calendar before setting B7 link values.
 
 ## B5. Assign the user in "New Lead Created"
 
@@ -286,6 +289,8 @@ After the API run. Inside the sub-account.
 UI, if you open it: bottom-left **Settings** > **Custom Values** (`/v2/location/{locationId}/settings/custom_values`). Set rows per page to 100 at the bottom right (`?size=100&page=1`) so all values show; Mindy had 32.
 
 Set these via the API. No browser needed: `GET /locations/{id}/customValues`, match by fieldKey or name, `PUT /locations/{id}/customValues/{cvId}` with `{name, value}`. Update the existing id only. Never create. Re-read afterwards; the list GET can lag a fresh PUT, so re-read the single value before retrying.
+
+Before writing the link custom values, curl the consultation URL and confirm it embeds the client's own calendar id (Denis 2026-11-25). If it shows another account's content or calendar, do not write the links. Fix the path first (B4).
 
 State seen on Mindy (reference only; the VA had probably already filled these by hand): the Link - Page / Calendar values already matched the Miscellaneous pages URLs from B4. Still empty then: Account - Main Smart Number, CRM Phone Number, Campaign - 2/1 BuyDown Consumer Story, Campaign - Open House Address / Listing Agent Company Name / Listing Agent Name, Link - Reviews - Google, Link - [user1] Zoom Meeting Room. Fill from the mapping below. That mapping replaces the earlier note that which values to fill, and from where, was still to be recorded.
 
@@ -311,6 +316,8 @@ Runs after Account Setup B2–B7. Features and Limits permissions (B1) wait unti
 **Prerequisite (manual, human):** the Home Consultation A2P website is connected to `<name>.clixwithus.com`. The Miscellaneous Pages site stays on `misce.rebelconvert.com`.
 
 ### P1. Clean A2P page paths
+
+Only on the per-client `<name>.clixwithus.com` Home Consultation A2P site. Never remove or edit numeric suffixes on `misce.rebelconvert.com` Miscellaneous pages (B4).
 
 Sites > Websites > **Home Consultation A2P** > Pages. For each page: three dots (top right of the card) > Settings ("Edit page details"). Remove the trailing numeric suffix from Path (e.g. `/home-722890` becomes `/home`), keep the Name, click **Update page**. Pages with no suffix stay as they are. Brian's result: /home, /privacy-policy, /terms-of-service, /contact, /about-us.
 

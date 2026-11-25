@@ -21,7 +21,7 @@ python run.py --dry-run                  # always do this first
 python run.py                            # then the real run; writes no HubSpot note
 python run.py --service-id 591889255682  # one specific account
 
-# Only after A1-A5, B2-B7, the A2P preparation SOP, and B1:
+# Only after A1-A6, B2-B7, the A2P preparation SOP, and B1:
 python run.py --final-note --service-id 591889255682 --dry-run
 python run.py --final-note --service-id 591889255682
 ```
@@ -87,7 +87,7 @@ summary, so don't bury them. Judgment calls that are yours, not the script's:
 
 After a real API run, report per account: what got done, what issues came up,
 and what's still waiting on a human. The script does not write a HubSpot note
-for that run. After A1–A5, B2–B7, P1–P2, and B1, run `--final-note` (dry-run
+for that run. After A1–A6, B2–B7, P1–P2, and B1, run `--final-note` (dry-run
 first). That note is headed "Convert account setup COMPLETE (final)" and summarizes
 the user (flagging an email that is still `@leadpops.com`), calendar, custom
 values set, and the end state: Misc on `misce.rebelconvert.com`, Home
@@ -111,14 +111,14 @@ minutes and is documented in `docs/SOP.md` under Authentication.
 Not automatable — no API exists for these, or they need a human decision:
 Business Profile, connecting the custom domain (GoDaddy login with 2FA),
 assigning the two website domains, workflow assignment and publish, Phone #
-purchase, and Closebot. Agency-level toggles (A1–A5) and Features and Limits
+purchase, and Closebot. Agency-level toggles (A1–A6) and Features and Limits
 (B1) are browser steps too. Always name these in your report so whoever picks
 the account up next knows exactly where it stands.
 
 Two SOPs, in `docs/SOP.md`. The recorded source is `docs/browser-steps-draft.md`.
 
-- **Account Setup SOP** — A (agency-level, A1–A5) comes first, then this skill's API run, then B2–B7, then the A2P preparation SOP, then B1 permissions last. Sites stays ON only while the account is being worked on (B3/B4, P1); B1 turns the entire Sites group OFF, and the end state is 35/67 features on. Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done. Both websites (Home Consultation A2P and Miscellaneous pages) go on `misce.rebelconvert.com`, never `<name>.clixwithus.com`, during Account Setup.
-- **A2P preparation SOP** — P1 (clean Home Consultation A2P page paths) and P2 (A2P custom values). A human must already have connected that site to `<name>.clixwithus.com`. Miscellaneous pages stay on `misce.rebelconvert.com`.
+- **Account Setup SOP** — A (agency-level, A1–A6) comes first, then this skill's API run, then B2–B7, then the A2P preparation SOP, then B1 permissions last. Sites stays ON only while the account is being worked on (B3/B4, P1); B1 turns the entire Sites group OFF, and the end state is 35/67 features on. Then write the HubSpot completion note (run the final-note command) once everything, including B1, is done. Both websites (Home Consultation A2P and Miscellaneous pages) go on `misce.rebelconvert.com`, never `<name>.clixwithus.com`, during Account Setup.
+- **A2P preparation SOP** — P1 (clean Home Consultation A2P page paths on `<name>.clixwithus.com` only) and P2 (A2P custom values). A human must already have connected that site to `<name>.clixwithus.com`. Miscellaneous pages stay on `misce.rebelconvert.com`. Never remove or edit the numeric suffixes on those shared-subdomain paths; GHL's numbers keep accounts apart. If a Misc page has no GHL-added number, append a unique random 4-digit suffix and confirm the public URL is this client's before B7. Before writing the B7 link custom values, curl the consultation URL and confirm it embeds the client's own calendar id.
 
 B7 and P2 custom values are set with the GHL customValues API: update existing ids only, never create.
 
@@ -126,4 +126,4 @@ B7 and P2 custom values are set with the GHL customValues API: update existing i
 
 ## Reference
 
-`docs/SOP.md` is the full procedure: the Account Setup SOP (A1–A5, the API run, B2–B7, B1 last) and the A2P preparation SOP (P1, P2), including the 32-field custom values mapping, the field-source precedence rules, and every API gotcha found the hard way (the calendar endpoint silently resetting omitted fields, the `calendar_id` custom value the booking bot depends on, the asynchronous email swap, the Jotform login wall). `docs/browser-steps-draft.md` is the recorded walkthrough those SOPs were folded from. Read both before changing anything in the scripts.
+`docs/SOP.md` is the full procedure: the Account Setup SOP (A1–A6, the API run, B2–B7, B1 last) and the A2P preparation SOP (P1, P2), including the 32-field custom values mapping, the field-source precedence rules, and every API gotcha found the hard way (the calendar endpoint silently resetting omitted fields, the `calendar_id` custom value the booking bot depends on, the asynchronous email swap, the Jotform login wall). `docs/browser-steps-draft.md` is the recorded walkthrough those SOPs were folded from. Read both before changing anything in the scripts.

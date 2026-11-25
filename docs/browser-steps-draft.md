@@ -19,6 +19,7 @@ All at the agency (rebel iQ) level, for the client's sub-account only.
 - A3 Agency Settings > Workflow - External AI Models: disable for the client.
 - A4 Agency Settings > Domain Purchase: disable for the client. The toggle may not stick the first time; wait a few seconds, reload and check.
 - A5 Agency main menu (not Settings) > AI Suite > Plans & Limits tab: AI Agents off for the client. Ignore the "Set $50.00 default" banner.
+- A6 Reselling (Denis 2026-11-25): Agency > Sub-Accounts, search the client's sub-account, click the name to open its settings panel (direct URL `https://app.rebelconvert.com/accounts/detail/{locationId}`), open the "Reselling" tab, turn ALL toggles OFF. There are 10: WhatsApp, Prospecting, Branded Client Portal Mobile App, Listings, WordPress, AI Employee, SEO (By Search Atlas), Workflow Pro - Pricing Tiers, Dedicated IP, Ad Manager. No separate Save needed: each card's Save greys out once toggled; reload and verify all off.
 - A2-A4 pages each have a per-account Enable/Disable Feature toggle (Rebilling stays off).
 
 ## B1. Sub-account settings > Features and Limits (run LAST)
@@ -65,7 +66,9 @@ All at the agency (rebel iQ) level, for the client's sub-account only.
 ## B4. Miscellaneous pages domain and page URLs
 1. Sites > Websites > Miscellaneous pages > Settings. Domain `misce.rebelconvert.com`, the same domain as Home Consultation A2P (B3). Never `<name>.clixwithus.com`. Save, reload, check.
 2. GHL adds numeric suffixes to the site path (e.g. `/miscellaneous-pages-793351`) and every page path, with or without the alert "Some paths are updated due to url conflicts with other funnels!". That's normal.
-3. Pages tab: copy each page's public URL. 5 pages: Book A Consultation (mortgage-consultation-NNNN), No Show Page, Showed and not qualified, Showed and qualified, Referral Page. Always read the suffixes from the page.
+3. NEVER remove or edit the numeric suffixes on `misce.rebelconvert.com` page paths (Denis 2026-11-25). Every account shares that subdomain, so GHL's numbers keep paths unique. Only the per-client `<name>.clixwithus.com` A2P site gets numbers removed (P1).
+4. Pages tab: copy each page's public URL. 5 pages: Book A Consultation (mortgage-consultation-NNNN), No Show Page, Showed and not qualified, Showed and qualified, Referral Page. Always read the suffixes from the page.
+5. Exception seen on Moses Shaukat (2026-11-25): his Misc pages had no GHL-added numbers (e.g. `/mortgage-consultation`, `/convertnoshow-1161`) and collided with another account (the public `/mortgage-consultation` showed Infinity Mortgage Group). Re-saving the domain did not renumber them. Fix: page three dots > Settings, append a unique random 4-digit suffix to each path (e.g. `/mortgage-consultation-4827`, `/convertnoshow-1161-7351`), then verify each public URL shows the client's own content/calendar before setting B7 link values.
 
 ## B5. Assign the user in "New Lead Created"
 1. Automation > folder iQ - Internal Operations (if an auto-save prompt shows, choose "Continue with Manual Save") > workflow 01. iQ - New Lead Created.
@@ -85,6 +88,8 @@ All at the agency (rebel iQ) level, for the client's sub-account only.
 UI: bottom-left Settings > Custom Values (`/v2/location/{locationId}/settings/custom_values`). Set rows per page to 100 at the bottom right (`?size=100&page=1`) so all values show; Mindy had 32.
 
 These can be set via the API, no browser needed: `GET /locations/{id}/customValues`, match by fieldKey/name, `PUT /locations/{id}/customValues/{cvId}` with `{name, value}` (existing id only; never create). Re-read afterwards; the list GET can lag a fresh PUT, so re-read the single value before retrying.
+
+Before writing the link custom values, curl the consultation URL and confirm it embeds the client's own calendar id (Denis 2026-11-25). If it shows another account's content or calendar, do not write the links. Fix the path first (B4).
 
 State seen on Mindy (reference only; the VA had probably already filled these by hand): the Link - Page / Calendar values already matched the Miscellaneous pages URLs from B4. Still empty then: Account - Main Smart Number, CRM Phone Number, Campaign - 2/1 BuyDown Consumer Story, Campaign - Open House Address / Listing Agent Company Name / Listing Agent Name, Link - Reviews - Google, Link - [user1] Zoom Meeting Room. Fill from the mapping below. That mapping replaces the earlier note that which values to fill, and from where, was still to be recorded.
 
@@ -114,6 +119,8 @@ Runs after the Account Setup SOP. Features and Limits permissions (B1) wait unti
 Prerequisite (manual, human): the Home Consultation A2P website is connected to `<name>.clixwithus.com`. The Miscellaneous Pages site stays on `misce.rebelconvert.com`.
 
 ## P1. Clean A2P page paths
+Only on the per-client `<name>.clixwithus.com` Home Consultation A2P site. Never remove or edit numeric suffixes on `misce.rebelconvert.com` Miscellaneous pages (B4).
+
 Sites > Websites > Home Consultation A2P > Pages. For each page: three dots (top right of the card) > Settings ("Edit page details"). Remove the trailing numeric suffix from Path (e.g. `/home-722890` becomes `/home`), keep the Name, click Update page. Pages with no suffix stay as they are. Brian's result: /home, /privacy-policy, /terms-of-service, /contact, /about-us.
 
 ## P2. A2P custom values

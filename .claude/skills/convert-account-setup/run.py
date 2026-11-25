@@ -445,7 +445,7 @@ def write_final_note(service, company_tok, dry_run):
     """Write the completion note. Never updates the Service pipeline stage.
 
     A normal setup run must not call this. It runs only from `--final-note`,
-    after A1–A5, the API run, B2–B7, P1–P2, and B1 are done.
+    after A1–A6, the API run, B2–B7, P1–P2, and B1 are done.
     """
     service_id = service["id"]
     name = service["properties"].get("hs_name") or service_id
@@ -522,7 +522,7 @@ def main():
             continue
         # The completion note is not written here. It is the done-signal and
         # waits until both SOPs, including B1, are finished.
-        print("  HubSpot note not written. After A1-A5, B2-B7, the A2P "
+        print("  HubSpot note not written. After A1-A6, B2-B7, the A2P "
               "preparation SOP, and B1:")
         print(f"    python run.py --final-note --service-id {result['service_id']}")
     return 0
